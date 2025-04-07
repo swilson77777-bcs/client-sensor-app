@@ -334,6 +334,7 @@ app.get('/api/download-media/:mediaType/:category/:customerId', (req, res) => {
     }
   );
 });
+
 // Update the /api/customer-docs/:customerNumber endpoint
 app.get('/api/customer-docs/:customerNumber', (req, res) => {
   const customerNumber = req.params.customerNumber;
