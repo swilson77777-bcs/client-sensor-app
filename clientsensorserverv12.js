@@ -263,6 +263,9 @@ app.get('/api/customer-media/:customerNumber', (req, res) => {
 app.get('/api/download-media/:mediaType/:category/:customerNumber', (req, res) => {
   const { mediaType, category, customerNumber } = req.params;
 
+  // Normalize mediaType to match document case
+  const normalizedMediaType = mediaType.charAt(0).toUpperCase() + mediaType.slice(1).toLowerCase();
+
   // Validate parameters
   if (!mediaType || !category || !customerNumber) {
     return res.status(400).json({ error: 'Missing required parameters' });
@@ -271,7 +274,7 @@ app.get('/api/download-media/:mediaType/:category/:customerNumber', (req, res) =
   let tableName, columnName, filenameColumn;
   
   // Match document structure for other media types
-  switch(mediaType) {
+  switch(normalizedMediaType) {
     case 'Document':
       tableName = 'RGAdocs';
       columnName = `doc${category}`;

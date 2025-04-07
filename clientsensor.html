@@ -132,6 +132,21 @@
         cursor: not-allowed;
     }
 
+.category-container {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  
+  .media-item {
+    transition: transform 0.2s;
+  }
+  
+  .media-item:hover {
+    transform: translateX(5px);
+  }
+
     #recordCounter {
         margin-left: 10px;
         font-weight: bold;
@@ -3296,29 +3311,57 @@ function displayMediaItems(mediaType) {
     container.innerHTML = `<p class="no-items-message">No ${mediaType} found</p>`;
     return;
   }
-  
+
+  // Group items by category
+  const groupedItems = {
+    Roof: [],
+    Gutter: [],
+    Attic: []
+  };
+
+  items.forEach(item => {
+    if (groupedItems[item.category]) {
+      groupedItems[item.category].push(item);
+    }
+  });
+
   let html = '';
   
-  items.forEach(item => {
+  // Create containers for each category
+  for (const [category, categoryItems] of Object.entries(groupedItems)) {
+    if (categoryItems.length === 0) continue;
+
     html += `
-      <div class="media-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd;">
-        <div style="font-weight: bold;">${item.filename}</div>
-        <div style="color: #666; margin: 5px 0;">${item.description}</div>
-        <div>
-          <button onclick="downloadMedia('${mediaType}', '${item.category}', '${item.id}')" 
-                  class="btn btn-primary btn-sm" style="margin-right: 5px;">
-            Download
-          </button>
-          <button onclick="deleteMedia('${mediaType}', '${item.id}', '${item.category}')" 
-                  class="btn btn-danger btn-sm">
-            Delete
-          </button>
-        </div>
-      </div>
+      <div class="category-container" style="margin-bottom: 30px;">
+        <h4 style="border-bottom: 2px solid #007bff; padding-bottom: 5px;">
+          ${category} ${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)}
+        </h4>
     `;
-  });
-  
-  container.innerHTML = html;
+
+    categoryItems.forEach(item => {
+      html += `
+        <div class="media-item" style="margin: 10px 0; padding: 10px; border: 1px solid #eee;">
+          <div style="font-weight: bold;">${item.filename}</div>
+          <div style="color: #666; font-size: 0.9em;">${item.description}</div>
+          <div style="margin-top: 8px;">
+            <button onclick="downloadMedia('${mediaType === 'docs' ? 'Document' : mediaType}', 
+                     '${item.category}', '${item.id}')" 
+                    class="btn btn-primary btn-sm">
+              Download
+            </button>
+            <button onclick="deleteMedia('${mediaType}', '${item.id}', '${item.category}')" 
+                    class="btn btn-danger btn-sm">
+              Delete
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`; // Close category-container
+  }
+
+  container.innerHTML = html || `<p class="no-items-message">No ${mediaType} found in any category</p>`;
 }
 // Add this function if it doesn't already exist
 function downloadMedia(mediaType, category, customerId) {
