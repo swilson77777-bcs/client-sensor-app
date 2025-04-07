@@ -85,6 +85,70 @@ app.get('/api/search', (req, res) => {
   });
 });
 
+app.get('/api/customer-docs/:customerNumber', (req, res) => {
+  const customerNumber = req.params.customerNumber;
+
+  if (!customerNumber) {
+    return res.status(400).json({ error: 'Customer number is required' });
+  }
+
+  // Fetch all rows for the given customer number
+  db.all(
+    `SELECT customerNumber, 
+            docRoof as roofDoc, docRoofDesc as roofDesc, docRoofFilename as roofFilename,
+            docGutter as gutterDoc, docGutterDesc as gutterDesc, docGutterFilename as gutterFilename,
+            docAttic as atticDoc, docAtticDesc as atticDesc, docAtticFilename as atticFilename
+     FROM RGAdocs 
+     WHERE customerNumber = ?`,
+    [customerNumber],
+    (err, rows) => {
+      if (err) {
+        console.error('Database error when fetching docs:', err);
+        return res.status(500).json({ error: 'Database error when fetching documents' });
+      }
+
+      if (!rows || rows.length === 0) {
+        return res.json({ docs: [] }); // Return empty array if no documents found
+      }
+
+      const docs = [];
+
+      // Process each row and add documents to the response
+      rows.forEach(row => {
+        if (row.roofDoc) {
+          docs.push({
+            id: `${row.customerNumber}-roof`,
+            category: 'Roof',
+            filename: row.roofFilename || 'Roof Document',
+            description: row.roofDesc || 'Roof Document'
+          });
+        }
+
+        if (row.gutterDoc) {
+          docs.push({
+            id: `${row.customerNumber}-gutter`,
+            category: 'Gutter',
+            filename: row.gutterFilename || 'Gutter Document',
+            description: row.gutterDesc || 'Gutter Document'
+          });
+        }
+
+        if (row.atticDoc) {
+          docs.push({
+            id: `${row.customerNumber}-attic`,
+            category: 'Attic',
+            filename: row.atticFilename || 'Attic Document',
+            description: row.atticDesc || 'Attic Document'
+          });
+        }
+      });
+
+      return res.json({ docs }); // Return all documents in response
+    }
+  );
+});
+
+
 // API endpoint to get customer media files
 app.get('/api/customer-media/:customerNumber', (req, res) => {
   const customerNumber = req.params.customerNumber;
@@ -262,117 +326,43 @@ app.get('/api/customer-media/:customerNumber', (req, res) => {
 // API endpoint to download media
 app.get('/api/download-media/:mediaType/:category/:customerNumber', (req, res) => {
   const { mediaType, category, customerNumber } = req.params;
-
-  // Normalize mediaType to match document case
-  const normalizedMediaType = mediaType.charAt(0).toUpperCase() + mediaType.slice(1).toLowerCase();
-
-  // Validate parameters
-  if (!mediaType || !category || !customerNumber) {
-    return res.status(400).json({ error: 'Missing required parameters' });
-  }
-
-  let tableName, columnName, filenameColumn;
   
-  // Match document structure for other media types
-  switch(normalizedMediaType) {
-    case 'Document':
-      tableName = 'RGAdocs';
-      columnName = `doc${category}`;
-      filenameColumn = `doc${category}Filename`;
-      break;
-    case 'Image':
-      tableName = 'RGAimages';
-      columnName = `image${category}`;
-      filenameColumn = `image${category}Filename`; 
-      break;
-    case 'Video':
-      tableName = 'RGAvideos';
-      columnName = `video${category}`;
-      filenameColumn = `video${category}Filename`;
-      break;
-    default:
-      return res.status(400).json({ error: 'Invalid media type' });
-  }
+  // 1. Capitalize first letter of category (critical fix)
+  const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
 
-  // Keep existing working query pattern
+  // 2. Database column configuration
+  const mediaConfig = {
+    Document: { table: 'RGAdocs', prefix: 'doc', mime: 'application/pdf' },
+    Image: { table: 'RGAimages', prefix: 'image', mime: 'image/jpeg' },
+    Video: { table: 'RGAvideos', prefix: 'video', mime: 'video/mp4' }
+  };
+
+  const config = mediaConfig[mediaType];
+  if (!config) return res.status(400).json({ error: "Invalid media type" });
+
+  // 3. Use formatted category for column names
+  const columnName = `${config.prefix}${formattedCategory}`;
+  const filenameColumn = `${columnName}Filename`;
+
   db.get(
     `SELECT ${columnName} as fileData, ${filenameColumn} as filename 
-     FROM ${tableName}
+     FROM ${config.table} 
      WHERE customerNumber = ?`,
     [customerNumber],
     (err, row) => {
       if (err) {
         console.error(`Database error: ${err.message}`);
-        return res.status(500).json({ error: 'Database error' });
+        return res.status(500).json({ error: "Database error" });
       }
 
-      if (!row || !row.fileData) {
-        return res.status(404).json({ error: 'File not found' });
+      if (!row?.fileData) {
+        return res.status(404).json({ error: "File not found" });
       }
 
-      // Use original filename or generate default
-      const filename = row.filename || `${category}_${mediaType.toLowerCase()}_${customerNumber}.${mediaType === 'Document' ? 'pdf' : mediaType === 'Image' ? 'jpg' : 'mp4'}`;
-      
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.send(Buffer.from(row.fileData));    
-    }
-  );
-});
-
-// Update the /api/customer-docs/:customerNumber endpoint
-app.get('/api/customer-docs/:customerNumber', (req, res) => {
-  const customerNumber = req.params.customerNumber;
-
-  db.all(
-    `SELECT customerNumber, 
-            docRoof as roofDoc, docRoofDesc as roofDesc, docRoofFilename as roofFilename,
-            docGutter as gutterDoc, docGutterDesc as gutterDesc, docGutterFilename as gutterFilename,
-            docAttic as atticDoc, docAtticDesc as atticDesc, docAtticFilename as atticFilename
-     FROM RGAdocs 
-     WHERE customerNumber = ?`,
-    [customerNumber],
-    (err, rows) => {
-      if (err) {
-        console.error('Database error when fetching docs:', err);
-        return res.status(500).json({ error: 'Database error when fetching documents' });
-      }
-
-      const docs = [];
-      
-      // Process all rows (though typically just one row per customer)
-      rows.forEach(row => {
-        // Add Roof document if exists
-        if (row.roofDoc) {
-          docs.push({
-            id: row.customerNumber + '_roof',
-            category: 'Roof',
-            filename: row.roofFilename || 'Roof Document',
-            description: row.roofDesc || 'Roof Document'
-          });
-        }
-        
-        // Add Gutter document if exists
-        if (row.gutterDoc) {
-          docs.push({
-            id: row.customerNumber + '_gutter',
-            category: 'Gutter',
-            filename: row.gutterFilename || 'Gutter Document',
-            description: row.gutterDesc || 'Gutter Document'
-          });
-        }
-        
-        // Add Attic document if exists
-        if (row.atticDoc) {
-          docs.push({
-            id: row.customerNumber + '_attic',
-            category: 'Attic',
-            filename: row.atticFilename || 'Attic Document',
-            description: row.atticDesc || 'Attic Document'
-          });
-        }
-      });
-
-      return res.json({ docs });
+      // 4. Set proper MIME type
+      res.setHeader('Content-Type', config.mime);
+      res.setHeader('Content-Disposition', `attachment; filename="${row.filename || formattedCategory}"`);
+      res.send(Buffer.from(row.fileData));
     }
   );
 });

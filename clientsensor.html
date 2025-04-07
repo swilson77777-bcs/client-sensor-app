@@ -3306,6 +3306,7 @@ function displayMediaItems(mediaType) {
   const containerId = mediaType === 'docs' ? 'documentsList' : 
                       mediaType === 'images' ? 'imagesList' : 'videosList';
   const container = document.getElementById(containerId);
+  const customerNumber = document.getElementById('customerNumber').value; // Get current customer number
   
   if (!items || items.length === 0) {
     container.innerHTML = `<p class="no-items-message">No ${mediaType} found</p>`;
@@ -3339,13 +3340,17 @@ function displayMediaItems(mediaType) {
     `;
 
     categoryItems.forEach(item => {
+      // Convert mediaType to server-friendly format
+      const serverMediaType = mediaType === 'docs' ? 'Document' : 
+                             mediaType === 'images' ? 'Image' : 
+                             mediaType === 'videos' ? 'Video' : mediaType;
+
       html += `
         <div class="media-item" style="margin: 10px 0; padding: 10px; border: 1px solid #eee;">
           <div style="font-weight: bold;">${item.filename}</div>
           <div style="color: #666; font-size: 0.9em;">${item.description}</div>
           <div style="margin-top: 8px;">
-            <button onclick="downloadMedia('${mediaType === 'docs' ? 'Document' : mediaType}', 
-                     '${item.category}', '${item.id}')" 
+            <button onclick="downloadMedia('${serverMediaType}', '${item.category}', '${customerNumber}')" 
                     class="btn btn-primary btn-sm">
               Download
             </button>
@@ -3364,8 +3369,16 @@ function displayMediaItems(mediaType) {
   container.innerHTML = html || `<p class="no-items-message">No ${mediaType} found in any category</p>`;
 }
 // Add this function if it doesn't already exist
-function downloadMedia(mediaType, category, customerId) {
-  const url = `/api/download-media/${mediaType}/${category}/${customerId}`;
+function downloadMedia(mediaType, category, customerNumber) {
+  // Validate mediaType casing (Document/Image/Video)
+  const normalizedMediaType = mediaType === 'docs' ? 'Document' : 
+                             mediaType === 'images' ? 'Image' :
+                             mediaType === 'videos' ? 'Video' : mediaType;
+
+  // Encode category to handle spaces/special characters
+  const encodedCategory = encodeURIComponent(category);
+  
+  const url = `/api/download-media/${normalizedMediaType}/${encodedCategory}/${customerNumber}`;
   console.log('Download URL:', url);
   window.open(url, '_blank');
 }
@@ -3381,16 +3394,13 @@ function applyMediaFilters() {
   document.getElementById('videosSection').style.display = showVideos ? 'block' : 'none';
 }
 
+// Ensure category names match server expectations
 function downloadMedia(mediaType, category) {
   const customerNumber = document.getElementById('customerNumber').value;
-  if (!customerNumber) {
-    showNotification('Please select a customer first', 'error');
-    return;
-  }
+  if (!customerNumber) return;
   
-  // Use same URL pattern as working document downloads
+  // Pass category AS-IS (Roof/Gutter/Attic)
   const url = `/api/download-media/${mediaType}/${category}/${customerNumber}`;
-  console.log('Download URL:', url);
   window.open(url, '_blank');
 }
 
