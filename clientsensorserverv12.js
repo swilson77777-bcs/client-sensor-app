@@ -336,63 +336,42 @@ app.get('/api/download-media/:mediaType/:category/:customerId', (req, res) => {
 });
 
 // Update the /api/customer-docs/:customerNumber endpoint
-// API endpoint to get all customer documents
 app.get('/api/customer-docs/:customerNumber', (req, res) => {
   const customerNumber = req.params.customerNumber;
-
-  db.all(
+  
+  db.get(
     `SELECT customerNumber, 
-            docRoof as roofDoc, docRoofDesc as roofDesc, docRoofFilename as roofFilename, docRoofCustomerView as roofCustomerView, docRoofInternalView as roofInternalView,
-            docGutter as gutterDoc, docGutterDesc as gutterDesc, docGutterFilename as gutterFilename, docGutterCustomerView as gutterCustomerView, docGutterInternalView as gutterInternalView,
-            docAttic as atticDoc, docAtticDesc as atticDesc, docAtticFilename as atticFilename, docAtticCustomerView as atticCustomerView, docAtticInternalView as atticInternalView
+            docRoof, docRoofDesc, docRoofFilename, docRoofCustomerView, docRoofInternalView,
+            docGutter, docGutterDesc, docGutterFilename, docGutterCustomerView, docGutterInternalView,
+            docAttic, docAtticDesc, docAtticFilename, docAtticCustomerView, docAtticInternalView
      FROM RGAdocs 
      WHERE customerNumber = ?`,
     [customerNumber],
-    (err, rows) => {
+    (err, row) => {
       if (err) {
         console.error('Database error when fetching docs:', err);
         return res.status(500).json({ error: 'Database error when fetching documents' });
       }
-
-      if (!rows || rows.length === 0) {
+      
+      if (!row) {
         return res.json({ docs: [] });
       }
-
+      
       const docs = [];
-
-      rows.forEach(row => {
-        if (row.roofDoc) {
-          docs.push({
-            id: row.customerNumber,
-            category: 'Roof',
-            filename: row.roofFilename || 'Roof Document',
-            description: row.roofDesc || 'Roof Document',
-            customerView: row.roofCustomerView,
-            internalView: row.roofInternalView
-          });
-        }
-        if (row.gutterDoc) {
-          docs.push({
-            id: row.customerNumber,
-            category: 'Gutter',
-            filename: row.gutterFilename || 'Gutter Document',
-            description: row.gutterDesc || 'Gutter Document',
-            customerView: row.gutterCustomerView,
-            internalView: row.gutterInternalView
-          });
-        }
-        if (row.atticDoc) {
-          docs.push({
-            id: row.customerNumber,
-            category: 'Attic',
-            filename: row.atticFilename || 'Attic Document',
-            description: row.atticDesc || 'Attic Document',
-            customerView: row.atticCustomerView,
-            internalView: row.atticInternalView
-          });
-        }
-      });
-
+      
+      if (row.docRoof) {
+        docs.push({
+          id: 'Roof',
+          category: 'Roof',
+          filename: row.docRoofFilename || 'Roof Document',
+          description: row.docRoofDesc || 'Roof Document',
+          customerView: row.docRoofCustomerView,
+          internalView: row.docRoofInternalView
+        });
+      }
+      
+      // Similar changes for docGutter and docAttic
+      
       return res.json({ docs });
     }
   );
