@@ -3291,46 +3291,35 @@ function displayMediaItems(mediaType) {
   const containerId = mediaType === 'docs' ? 'documentsList' : 
                       mediaType === 'images' ? 'imagesList' : 'videosList';
   const container = document.getElementById(containerId);
-  
+
   if (!items || items.length === 0) {
     container.innerHTML = `<p class="no-items-message">No ${mediaType} found</p>`;
     return;
   }
-  
+
   let html = '';
-  
+
   items.forEach(item => {
-    // Use the actual filename or description as the primary display text
-    const displayName = item.filename || item.description || (mediaType === 'docs' ? 'Document' : 
-                                      mediaType === 'images' ? 'Image' : 'Video');
-    const category = item.category || '';
-    const description = item.description || 'No description';
-    
-    // Map mediaType to the correct parameter for the download endpoint
-    const mediaTypeParam = mediaType === 'docs' ? 'Document' : 
-                          mediaType === 'images' ? 'Image' : 'Video';
-    
-    const customerNumber = document.getElementById('customerNumber').value;
-    
     html += `
       <div class="media-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
         <div style="flex: 1;">
-          <div style="font-weight: bold;">${displayName}</div>
-          <div style="color: #666; font-size: 0.9em;">${description}</div>
+          <div style="font-weight: bold;">${item.filename}</div>
+          <div style="color: #666; font-size: 0.9em;">${item.description}</div>
         </div>
         <div style="display: flex; gap: 10px;">
-          <button onclick="downloadMedia('${mediaTypeParam}', '${item.category}', '${customerNumber}')" class="btn btn-primary btn-sm">Download</button>
-          ${mediaType === 'images' ? `<button onclick="viewMedia('${item.id}', '${category}')" class="btn btn-info btn-sm">View</button>` : ''}
-          <button onclick="deleteMedia('${mediaType}', '${item.id}', '${category}')" class="btn btn-danger btn-sm" style="padding: 0 8px;">
+          <button onclick="downloadMedia('${item.category}', '${item.id}')" class="btn btn-primary btn-sm">Download</button>
+          <button onclick="deleteMedia('${mediaType}', '${item.id}', '${item.category}')" class="btn btn-danger btn-sm" style="padding: 0 8px;">
             <i class="fas fa-trash" style="font-size: 14px;">🗑️</i>
           </button>
         </div>
       </div>
     `;
   });
-  
+
   container.innerHTML = html;
 }
+
+
 // Add this function if it doesn't already exist
 function downloadMedia(mediaType, category, customerNumber) {
   const url = `/api/download-media/${mediaType}/${category}/${customerNumber}`;
