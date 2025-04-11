@@ -96,8 +96,11 @@ app.get('/api/customer-docs/:customerNumber', (req, res) => {
   db.all(
     `SELECT customerNumber, 
             docRoof as roofDoc, docRoofDesc as roofDesc, docRoofFilename as roofFilename,
+            docRoofCustomerView as roofCustomerView, docRoofInternalView as roofInternalView,
             docGutter as gutterDoc, docGutterDesc as gutterDesc, docGutterFilename as gutterFilename,
-            docAttic as atticDoc, docAtticDesc as atticDesc, docAtticFilename as atticFilename
+            docGutterCustomerView as gutterCustomerView, docGutterInternalView as gutterInternalView,
+            docAttic as atticDoc, docAtticDesc as atticDesc, docAtticFilename as atticFilename,
+            docAtticCustomerView as atticCustomerView, docAtticInternalView as atticInternalView
      FROM RGAdocs 
      WHERE customerNumber = ?`,
     [customerNumber],
@@ -120,7 +123,9 @@ app.get('/api/customer-docs/:customerNumber', (req, res) => {
             id: `${row.customerNumber}-roof`,
             category: 'Roof',
             filename: row.roofFilename || 'Roof Document',
-            description: row.roofDesc || 'Roof Document'
+            description: row.roofDesc || 'Roof Document',
+            customerView: row.roofCustomerView,
+            internalView: row.roofInternalView
           });
         }
 
@@ -129,7 +134,9 @@ app.get('/api/customer-docs/:customerNumber', (req, res) => {
             id: `${row.customerNumber}-gutter`,
             category: 'Gutter',
             filename: row.gutterFilename || 'Gutter Document',
-            description: row.gutterDesc || 'Gutter Document'
+            description: row.gutterDesc || 'Gutter Document',
+            customerView: row.gutterCustomerView,
+            internalView: row.gutterInternalView
           });
         }
 
@@ -138,7 +145,9 @@ app.get('/api/customer-docs/:customerNumber', (req, res) => {
             id: `${row.customerNumber}-attic`,
             category: 'Attic',
             filename: row.atticFilename || 'Attic Document',
-            description: row.atticDesc || 'Attic Document'
+            description: row.atticDesc || 'Attic Document',
+            customerView: row.atticCustomerView,
+            internalView: row.atticInternalView
           });
         }
       });
@@ -327,10 +336,10 @@ app.get('/api/customer-media/:customerNumber', (req, res) => {
 app.get('/api/download-media/:mediaType/:category/:customerNumber', (req, res) => {
   const { mediaType, category, customerNumber } = req.params;
   
-  // 1. Capitalize first letter of category (critical fix)
+  // Capitalize first letter of category
   const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
 
-  // 2. Database column configuration
+  // Database column configuration
   const mediaConfig = {
     Document: { table: 'RGAdocs', prefix: 'doc', mime: 'application/pdf' },
     Image: { table: 'RGAimages', prefix: 'image', mime: 'image/jpeg' },
@@ -340,14 +349,20 @@ app.get('/api/download-media/:mediaType/:category/:customerNumber', (req, res) =
   const config = mediaConfig[mediaType];
   if (!config) return res.status(400).json({ error: "Invalid media type" });
 
-  // 3. Use formatted category for column names
+  // Use formatted category for column names
   const columnName = `${config.prefix}${formattedCategory}`;
   const filenameColumn = `${columnName}Filename`;
 
+  // Modified query to find the specific row with the document
+  const query = `
+    SELECT ${columnName} as fileData, ${filenameColumn} as filename 
+    FROM ${config.table} 
+    WHERE customerNumber = ? AND ${columnName} IS NOT NULL
+    LIMIT 1
+  `;
+
   db.get(
-    `SELECT ${columnName} as fileData, ${filenameColumn} as filename 
-     FROM ${config.table} 
-     WHERE customerNumber = ?`,
+    query,
     [customerNumber],
     (err, row) => {
       if (err) {
@@ -359,10 +374,64 @@ app.get('/api/download-media/:mediaType/:category/:customerNumber', (req, res) =
         return res.status(404).json({ error: "File not found" });
       }
 
-      // 4. Set proper MIME type
+      // Set proper MIME type
       res.setHeader('Content-Type', config.mime);
       res.setHeader('Content-Disposition', `attachment; filename="${row.filename || formattedCategory}"`);
       res.send(Buffer.from(row.fileData));
+    }
+  );
+});
+
+app.post('/api/update-file-view', (req, res) => {
+  const { mediaType, category, fileId, customerNumber, viewType, value, filename } = req.body;
+  
+  if (!mediaType || !category || !customerNumber || !viewType || !filename) {
+    return res.status(400).json({ success: false, error: 'Missing required parameters' });
+  }
+  
+  // Determine the table and column names based on mediaType and category
+  let tableName, viewColumn, filenameColumn;
+  
+  // Format category to ensure proper capitalization
+  const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+  
+  switch(mediaType) {
+    case 'Document':
+      tableName = 'RGAdocs';
+      viewColumn = viewType === 'customer' ? `doc${formattedCategory}CustomerView` : `doc${formattedCategory}InternalView`;
+      filenameColumn = `doc${formattedCategory}Filename`;
+      break;
+    case 'Image':
+      tableName = 'RGAimages';
+      viewColumn = viewType === 'customer' ? `image${formattedCategory}CustomerView` : `image${formattedCategory}InternalView`;
+      filenameColumn = `image${formattedCategory}Filename`;
+      break;
+    case 'Video':
+      tableName = 'RGAvideos';
+      viewColumn = viewType === 'customer' ? `video${formattedCategory}CustomerView` : `video${formattedCategory}InternalView`;
+      filenameColumn = `video${formattedCategory}Filename`;
+      break;
+    default:
+      return res.status(400).json({ success: false, error: 'Invalid media type' });
+  }
+  
+  // Update the database - using BOTH customerNumber AND filename to identify the correct row
+  db.run(
+    `UPDATE ${tableName} SET ${viewColumn} = ? WHERE customerNumber = ? AND ${filenameColumn} = ?`,
+    [value, customerNumber, filename],
+    function(err) {
+      if (err) {
+        console.error(`Database error updating view setting:`, err);
+        return res.status(500).json({ success: false, error: 'Database error' });
+      }
+      
+      console.log(`Update result: ${this.changes} rows changed`);
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ success: false, error: 'File not found or no changes made' });
+      }
+      
+      res.json({ success: true });
     }
   );
 });
@@ -374,8 +443,11 @@ app.get('/api/customer-images/:customerNumber', (req, res) => {
   db.all(
     `SELECT customerNumber, 
             imageRoof as roofImage, imageRoofDesc as roofDesc, imageRoofFilename as roofFilename,
+            imageRoofCustomerView as roofCustomerView, imageRoofInternalView as roofInternalView,
             imageGutter as gutterImage, imageGutterDesc as gutterDesc, imageGutterFilename as gutterFilename,
-            imageAttic as atticImage, imageAtticDesc as atticDesc, imageAtticFilename as atticFilename
+            imageGutterCustomerView as gutterCustomerView, imageGutterInternalView as gutterInternalView,
+            imageAttic as atticImage, imageAtticDesc as atticDesc, imageAtticFilename as atticFilename,
+            imageAtticCustomerView as atticCustomerView, imageAtticInternalView as atticInternalView
      FROM RGAimages 
      WHERE customerNumber = ?`,
     [customerNumber],
@@ -393,7 +465,9 @@ app.get('/api/customer-images/:customerNumber', (req, res) => {
             id: row.customerNumber + '_roof',
             category: 'Roof',
             filename: row.roofFilename || 'Roof Image',
-            description: row.roofDesc || 'Roof Image'
+            description: row.roofDesc || 'Roof Image',
+            customerView: row.roofCustomerView,
+            internalView: row.roofInternalView
           });
         }
         if (row.gutterImage) {
@@ -401,7 +475,9 @@ app.get('/api/customer-images/:customerNumber', (req, res) => {
             id: row.customerNumber + '_gutter',
             category: 'Gutter',
             filename: row.gutterFilename || 'Gutter Image',
-            description: row.gutterDesc || 'Gutter Image'
+            description: row.gutterDesc || 'Gutter Image',
+            customerView: row.gutterCustomerView,
+            internalView: row.gutterInternalView
           });
         }
         if (row.atticImage) {
@@ -409,7 +485,9 @@ app.get('/api/customer-images/:customerNumber', (req, res) => {
             id: row.customerNumber + '_attic',
             category: 'Attic',
             filename: row.atticFilename || 'Attic Image',
-            description: row.atticDesc || 'Attic Image'
+            description: row.atticDesc || 'Attic Image',
+            customerView: row.atticCustomerView,
+            internalView: row.atticInternalView
           });
         }
       });
@@ -426,8 +504,11 @@ app.get('/api/customer-videos/:customerNumber', (req, res) => {
   db.all(
     `SELECT customerNumber, 
             videoRoof as roofVideo, videoRoofDesc as roofDesc, videoRoofFilename as roofFilename,
+            videoRoofCustomerView as roofCustomerView, videoRoofInternalView as roofInternalView,
             videoGutter as gutterVideo, videoGutterDesc as gutterDesc, videoGutterFilename as gutterFilename,
-            videoAttic as atticVideo, videoAtticDesc as atticDesc, videoAtticFilename as atticFilename
+            videoGutterCustomerView as gutterCustomerView, videoGutterInternalView as gutterInternalView,
+            videoAttic as atticVideo, videoAtticDesc as atticDesc, videoAtticFilename as atticFilename,
+            videoAtticCustomerView as atticCustomerView, videoAtticInternalView as atticInternalView
      FROM RGAvideos 
      WHERE customerNumber = ?`,
     [customerNumber],
@@ -445,7 +526,9 @@ app.get('/api/customer-videos/:customerNumber', (req, res) => {
             id: row.customerNumber + '_roof',
             category: 'Roof',
             filename: row.roofFilename || 'Roof Video',
-            description: row.roofDesc || 'Roof Video'
+            description: row.roofDesc || 'Roof Video',
+            customerView: row.roofCustomerView,
+            internalView: row.roofInternalView
           });
         }
         if (row.gutterVideo) {
@@ -453,7 +536,9 @@ app.get('/api/customer-videos/:customerNumber', (req, res) => {
             id: row.customerNumber + '_gutter',
             category: 'Gutter',
             filename: row.gutterFilename || 'Gutter Video',
-            description: row.gutterDesc || 'Gutter Video'
+            description: row.gutterDesc || 'Gutter Video',
+            customerView: row.gutterCustomerView,
+            internalView: row.gutterInternalView
           });
         }
         if (row.atticVideo) {
@@ -461,7 +546,9 @@ app.get('/api/customer-videos/:customerNumber', (req, res) => {
             id: row.customerNumber + '_attic',
             category: 'Attic',
             filename: row.atticFilename || 'Attic Video',
-            description: row.atticDesc || 'Attic Video'
+            description: row.atticDesc || 'Attic Video',
+            customerView: row.atticCustomerView,
+            internalView: row.atticInternalView
           });
         }
       });
@@ -1754,6 +1841,54 @@ app.get('/api/media/:type/:id', (req, res) => {
     
     res.set('Content-Type', contentType);
     res.send(blob);
+  });
+});
+
+app.delete('/api/delete-media/:mediaType/:category/:customerNumber/:filename', (req, res) => {
+  const { mediaType, category, customerNumber, filename } = req.params;
+  
+  // Capitalize first letter of category
+  const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+
+  // Database column configuration
+  const mediaConfig = {
+    Document: { table: 'RGAdocs', prefix: 'doc' },
+    Image: { table: 'RGAimages', prefix: 'image' },
+    Video: { table: 'RGAvideos', prefix: 'video' }
+  };
+
+  const config = mediaConfig[mediaType];
+  if (!config) return res.status(400).json({ success: false, error: "Invalid media type" });
+
+  // Use formatted category for column names
+  const columnName = `${config.prefix}${formattedCategory}`;
+  const filenameColumn = `${columnName}Filename`;
+  const descColumn = `${columnName}Desc`;
+  const customerViewColumn = `${columnName}CustomerView`;
+  const internalViewColumn = `${columnName}InternalView`;
+
+  // Update query to set all related columns to NULL where the customerNumber and filename match
+  const query = `
+    UPDATE ${config.table} 
+    SET ${columnName} = NULL, 
+        ${filenameColumn} = NULL, 
+        ${descColumn} = NULL,
+        ${customerViewColumn} = NULL,
+        ${internalViewColumn} = NULL
+    WHERE customerNumber = ? AND ${filenameColumn} = ?
+  `;
+
+  db.run(query, [customerNumber, filename], function(err) {
+    if (err) {
+      console.error(`Database error: ${err.message}`);
+      return res.status(500).json({ success: false, error: "Database error" });
+    }
+
+    if (this.changes === 0) {
+      return res.status(404).json({ success: false, error: "File not found" });
+    }
+
+    res.json({ success: true });
   });
 });
 
