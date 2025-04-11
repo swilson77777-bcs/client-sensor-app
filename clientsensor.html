@@ -3307,15 +3307,11 @@ function updateLocalMediaViewSetting(mediaType, category, fileId, viewType, valu
 
 
 function viewDownloadMedia() {
-  console.log('viewDownloadMedia function called');
   const customerNumber = document.getElementById('customerNumber').value;
-  
   if (!customerNumber) {
-    showNotification('Please select a customer record first', 'error');
+    showNotification('Please enter a customer number', 'error');
     return;
   }
-  
-  console.log('Customer number:', customerNumber);
   
   // Reset filters to checked state
   document.getElementById('filterDocs').checked = true;
@@ -3324,19 +3320,32 @@ function viewDownloadMedia() {
   document.getElementById('filterRoof').checked = true;
   document.getElementById('filterGutter').checked = true;
   document.getElementById('filterAttic').checked = true;
-
+  
   // Clear previous data
   document.getElementById('documentsList').innerHTML = '<p class="loading-message">Loading documents...</p>';
   document.getElementById('imagesList').innerHTML = '<p class="loading-message">Loading images...</p>';
-  document.getElementById('videosList').innerHTML = '<p class="loading-message">Loading videos...</p>';  
-
+  document.getElementById('videosList').innerHTML = '<p class="loading-message">Loading videos...</p>';
+  
   // Show the modal
   document.getElementById('viewDownloadModal').style.display = 'flex';
   
-  // Fetch customer media data
+  // Try to get customer info from existing data
+  const firstName = document.getElementById('firstName')?.value || '';
+  const lastName = document.getElementById('lastName')?.value || '';
+  
+  // Update the modal header with customer info
+  const modalHeader = document.querySelector('#viewDownloadModal h3');
+  if (modalHeader) {
+    if (firstName && lastName) {
+      modalHeader.innerHTML = `Customer Files <span style="font-weight: normal;">(${firstName} ${lastName}, Customer#  ${customerNumber})</span>`;
+    } else {
+      modalHeader.innerHTML = `Customer Files <span style="font-weight: normal;">(Customer# - ${customerNumber})</span>`;
+    }
+  }
+  
+  // Fetch customer media
   fetchCustomerMedia(customerNumber);
 }
-
 function downloadMedia(mediaType, category, customerId) {
   const url = `/api/download-media/${mediaType}/${category}/${customerId}`;
   console.log('Download URL:', url);
@@ -3830,9 +3839,15 @@ function createMediaViewerModal(customerNumber) {
 }
 
 function applyMediaFilters() {
+  // Get Type filter values
   const showDocs = document.getElementById('filterDocs');
   const showImages = document.getElementById('filterImages');
   const showVideos = document.getElementById('filterVideos');
+  
+  // Get Category filter values - ADD THIS CODE
+  const showRoof = document.getElementById('filterRoof');
+  const showGutter = document.getElementById('filterGutter');
+  const showAttic = document.getElementById('filterAttic');
   
   const docsSection = document.getElementById('documentsSection');
   const imagesSection = document.getElementById('imagesSection');
@@ -3850,8 +3865,33 @@ function applyMediaFilters() {
   if (showVideos && videosSection) {
     videosSection.style.display = showVideos.checked ? 'block' : 'none';
   }
+  
+  // ADD THIS CODE - Process category filters
+  if (showRoof && showGutter && showAttic) {
+    // Get all category containers
+    const categoryContainers = document.querySelectorAll('.media-category-container');
+    
+    // Loop through each container and check its heading
+    categoryContainers.forEach(container => {
+      const heading = container.querySelector('.media-type-title');
+      if (heading) {
+        const headingText = heading.textContent.trim();
+        
+        // Show/hide based on category
+        if (headingText.includes('Roof')) {
+          container.style.display = showRoof.checked ? 'block' : 'none';
+        } else if (headingText.includes('Gutter')) {
+          container.style.display = showGutter.checked ? 'block' : 'none';
+        } else if (headingText.includes('Attic')) {
+          container.style.display = showAttic.checked ? 'block' : 'none';
+        }
+      }
+    });
+    
+    // Check if we need to show "No items" messages
+    updateNoItemsMessages();
+  }
 }
-
 async function loadCustomerMedia(filters) {
   const customerNumber = document.getElementById('customerNumber').value;
   
@@ -4075,7 +4115,7 @@ function openMedia(mediaId, type) {
     <!-- Filter Section -->
 <div style="margin: 15px 0; padding: 10px; background-color: #f5f5f5; border-radius: 5px;">
   <div style="display: flex; gap: 20px; align-items: center;">
-    <span style="font-weight: bold;">Type</span>
+    <span style="font-weight: bold;">Type:</span>
     <div style="display: flex; flex-direction: column; align-items: center;">
       <label for="filterDocs">Docs</label>
       <input type="checkbox" id="filterDocs" checked style="margin-top: 5px;">
@@ -4095,7 +4135,7 @@ function openMedia(mediaId, type) {
 <!-- Category Filter Section -->
 <div style="margin: 15px 0; padding: 10px; background-color: #f5f5f5; border-radius: 5px;">
   <div style="display: flex; gap: 20px; align-items: center;">
-    <span style="font-weight: bold;">Category</span>
+    <span style="font-weight: bold;">Area:</span>
     <div style="display: flex; flex-direction: column; align-items: center;">
       <label for="filterRoof">Roof</label>
       <input type="checkbox" id="filterRoof" checked style="margin-top: 5px;">
