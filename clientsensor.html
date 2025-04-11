@@ -3317,11 +3317,19 @@ function viewDownloadMedia() {
   
   console.log('Customer number:', customerNumber);
   
-  // Reset filters
+  // Reset filters to checked state
   document.getElementById('filterDocs').checked = true;
   document.getElementById('filterImages').checked = true;
   document.getElementById('filterVideos').checked = true;
-  
+  document.getElementById('filterRoof').checked = true;
+  document.getElementById('filterGutter').checked = true;
+  document.getElementById('filterAttic').checked = true;
+
+  // Clear previous data
+  document.getElementById('documentsList').innerHTML = '<p class="loading-message">Loading documents...</p>';
+  document.getElementById('imagesList').innerHTML = '<p class="loading-message">Loading images...</p>';
+  document.getElementById('videosList').innerHTML = '<p class="loading-message">Loading videos...</p>';  
+
   // Show the modal
   document.getElementById('viewDownloadModal').style.display = 'flex';
   
@@ -3539,6 +3547,7 @@ function downloadMedia(mediaType, category, customerNumber) {
   
 
 function applyMediaFilters() {
+   console.log("Applying media filters...");
   // Get Type filter values
   const showDocs = document.getElementById('filterDocs').checked;
   const showImages = document.getElementById('filterImages').checked;
@@ -3548,6 +3557,11 @@ function applyMediaFilters() {
   const showRoof = document.getElementById('filterRoof').checked;
   const showGutter = document.getElementById('filterGutter').checked;
   const showAttic = document.getElementById('filterAttic').checked;
+
+  console.log("Filter settings:", { 
+    types: { docs: showDocs, images: showImages, videos: showVideos },
+    categories: { roof: showRoof, gutter: showGutter, attic: showAttic }
+  });
   
   // Show/hide the document sections based on filters
   document.getElementById('documentsSection').style.display = showDocs ? 'block' : 'none';
@@ -3560,6 +3574,8 @@ function applyMediaFilters() {
     const category = item.getAttribute('data-category');
     const mediaType = item.getAttribute('data-type');
     
+    console.log(`Item: category=${category}, type=${mediaType}`);
+
     // Check if this item's type is selected
     let typeSelected = false;
     if (mediaType === 'doc' && showDocs) typeSelected = true;
@@ -3573,7 +3589,9 @@ function applyMediaFilters() {
     if (category === 'Attic' && showAttic) categorySelected = true;
     
     // Show the item only if both type and category are selected
-    item.style.display = (typeSelected && categorySelected) ? 'block' : 'none';
+    const shouldDisplay = (typeSelected && categorySelected);
+    console.log(`Should display: ${shouldDisplay}`);
+    item.style.display = shouldDisplay ? 'block' : 'none';
   });
   
   // Update the "no items" messages
@@ -3586,17 +3604,26 @@ function updateNoItemsMessages() {
   
   sections.forEach(section => {
     const container = document.getElementById(`${section}List`);
+    if (!container) return;
+    
     const items = container.querySelectorAll('.media-item:not([style*="display: none"])');
     const noItemsMessage = container.querySelector('.no-items-message');
     
-    if (items.length === 0 && noItemsMessage) {
-      noItemsMessage.style.display = 'block';
+    if (items.length === 0) {
+      // If no message exists, create one
+      if (!noItemsMessage) {
+        const message = document.createElement('p');
+        message.className = 'no-items-message';
+        message.textContent = `No ${section} found matching the selected filters`;
+        container.appendChild(message);
+      } else {
+        noItemsMessage.style.display = 'block';
+      }
     } else if (noItemsMessage) {
       noItemsMessage.style.display = 'none';
     }
   });
 }
-
 
 // Ensure category names match server expectations
 function downloadMedia(mediaType, category) {
