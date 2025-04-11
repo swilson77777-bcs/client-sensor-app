@@ -3489,8 +3489,10 @@ function displayMediaItems(mediaType) {
         mediaType === 'images' ? 'Image' : 
         mediaType === 'videos' ? 'Video' : mediaType;
 
+      // Add data-type and data-category attributes for filtering
       html += `
-        <div class="media-item" style="margin: 10px 0; padding: 10px; border: 1px solid #eee; data-category="${item.category}" data-type="${mediaType === 'docs' ? 'doc' : mediaType.slice(0, -1)}">
+        <div class="media-item" style="margin: 10px 0; padding: 10px; border: 1px solid #eee;" 
+             data-category="${item.category}" data-type="${mediaType === 'docs' ? 'doc' : mediaType.slice(0, -1)}">
           <div style="font-weight: bold;">${item.filename}</div>
           <div style="color: #666; font-size: 0.9em;">${item.description}</div>
           <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
@@ -3547,7 +3549,8 @@ function downloadMedia(mediaType, category, customerNumber) {
   
 
 function applyMediaFilters() {
-   console.log("Applying media filters...");
+  console.log("Applying media filters...");
+  
   // Get Type filter values
   const showDocs = document.getElementById('filterDocs').checked;
   const showImages = document.getElementById('filterImages').checked;
@@ -3557,25 +3560,27 @@ function applyMediaFilters() {
   const showRoof = document.getElementById('filterRoof').checked;
   const showGutter = document.getElementById('filterGutter').checked;
   const showAttic = document.getElementById('filterAttic').checked;
-
+  
   console.log("Filter settings:", { 
     types: { docs: showDocs, images: showImages, videos: showVideos },
     categories: { roof: showRoof, gutter: showGutter, attic: showAttic }
   });
   
-  // Show/hide the document sections based on filters
+  // Show/hide the document sections based on type filters
   document.getElementById('documentsSection').style.display = showDocs ? 'block' : 'none';
   document.getElementById('imagesSection').style.display = showImages ? 'block' : 'none';
   document.getElementById('videosSection').style.display = showVideos ? 'block' : 'none';
   
   // Filter the actual media items by category
   const allMediaItems = document.querySelectorAll('.media-item');
+  console.log(`Found ${allMediaItems.length} media items to filter`);
+  
   allMediaItems.forEach(item => {
     const category = item.getAttribute('data-category');
     const mediaType = item.getAttribute('data-type');
     
     console.log(`Item: category=${category}, type=${mediaType}`);
-
+    
     // Check if this item's type is selected
     let typeSelected = false;
     if (mediaType === 'doc' && showDocs) typeSelected = true;
@@ -3590,8 +3595,19 @@ function applyMediaFilters() {
     
     // Show the item only if both type and category are selected
     const shouldDisplay = (typeSelected && categorySelected);
-    console.log(`Should display: ${shouldDisplay}`);
+    console.log(`Should display ${category} ${mediaType}: ${shouldDisplay}`);
+    
+    // Find the parent container (media-category-container) and check if it has any visible items
+    const parentContainer = item.closest('.media-category-container');
     item.style.display = shouldDisplay ? 'block' : 'none';
+    
+    // After hiding/showing items, check if the category container has any visible items
+    if (parentContainer) {
+      setTimeout(() => {
+        const visibleItems = parentContainer.querySelectorAll('.media-item[style*="display: block"]');
+        parentContainer.style.display = visibleItems.length > 0 ? 'block' : 'none';
+      }, 0);
+    }
   });
   
   // Update the "no items" messages
@@ -3606,10 +3622,10 @@ function updateNoItemsMessages() {
     const container = document.getElementById(`${section}List`);
     if (!container) return;
     
-    const items = container.querySelectorAll('.media-item:not([style*="display: none"])');
+    const visibleItems = container.querySelectorAll('.media-item[style*="display: block"]');
     const noItemsMessage = container.querySelector('.no-items-message');
     
-    if (items.length === 0) {
+    if (visibleItems.length === 0) {
       // If no message exists, create one
       if (!noItemsMessage) {
         const message = document.createElement('p');
