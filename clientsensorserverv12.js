@@ -839,6 +839,7 @@ app.post('/api/notes', (req, res) => {
 
 // Handle media uploads
 // API endpoint to upload media
+// API endpoint to upload media
 app.post('/api/upload-media', upload.single('file'), (req, res) => {
   const { topic, mediaType, description, customerView, internalView, customerNumber } = req.body;
   const file = req.file;
@@ -846,8 +847,8 @@ app.post('/api/upload-media', upload.single('file'), (req, res) => {
   if (!file || !topic || !mediaType || !customerNumber) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
-  
-  let tableName, columnName, descColumn, filenameColumn;
+
+  let tableName, columnName, descColumn, filenameColumn, customerViewColumn, internalViewColumn;
   
   switch(mediaType) {
     case 'Document':
@@ -855,40 +856,127 @@ app.post('/api/upload-media', upload.single('file'), (req, res) => {
       columnName = `doc${topic}`;
       descColumn = `doc${topic}Desc`;
       filenameColumn = `doc${topic}Filename`;
+      customerViewColumn = `doc${topic}CustomerView`;
+      internalViewColumn = `doc${topic}InternalView`;
       break;
     case 'Image':
       tableName = 'RGAimages';
       columnName = `image${topic}`;
       descColumn = `image${topic}Desc`;
       filenameColumn = `image${topic}Filename`;
+      customerViewColumn = `image${topic}CustomerView`;
+      internalViewColumn = `image${topic}InternalView`;
       break;
     case 'Video':
       tableName = 'RGAvideos';
       columnName = `video${topic}`;
       descColumn = `video${topic}Desc`;
       filenameColumn = `video${topic}Filename`;
+      customerViewColumn = `video${topic}CustomerView`;
+      internalViewColumn = `video${topic}InternalView`;
       break;
     default:
       return res.status(400).json({ error: 'Invalid media type' });
   }
-  
+
   const custView = customerView === 'true' || customerView === '1' ? 1 : 0;
   const intView = internalView === 'true' || internalView === '1' ? 1 : 0;
-  const originalFilename = file.originalname;
+  let originalFilename = file.originalname;
   
-  db.run(
-    `INSERT OR REPLACE INTO ${tableName} (customerNumber, ${columnName}, ${descColumn}, ${filenameColumn}, 
-     ${columnName}CustomerView, ${columnName}InternalView) VALUES (?, ?, ?, ?, ?, ?)`,
-    [customerNumber, file.buffer, description, originalFilename, custView, intView],
-    function(err) {
+  // Check if a file with the same name already exists
+  db.get(
+    `SELECT ${filenameColumn} FROM ${tableName} WHERE customerNumber = ? AND ${filenameColumn} = ?`,
+    [customerNumber, originalFilename],
+    (err, row) => {
       if (err) {
-        console.error(`Database error when uploading to ${tableName}:`, err);
-        return res.status(500).json({ error: 'Database error when uploading media' });
+        console.error(`Database error when checking for existing file:`, err);
+        return res.status(500).json({ error: 'Database error when checking for existing file' });
       }
       
-      res.json({ success: true });
+      // If a file with the same name exists, modify the filename
+      if (row) {
+        // Parse the filename to add a number
+        const lastDotIndex = originalFilename.lastIndexOf('.');
+        const nameWithoutExt = lastDotIndex !== -1 ? originalFilename.substring(0, lastDotIndex) : originalFilename;
+        const extension = lastDotIndex !== -1 ? originalFilename.substring(lastDotIndex) : '';
+        
+        // Function to check if a filename with a specific counter exists
+        const checkFilenameWithCounter = (counter) => {
+          return new Promise((resolve, reject) => {
+            const newFilename = `${nameWithoutExt}(${counter})${extension}`;
+            db.get(
+              `SELECT ${filenameColumn} FROM ${tableName} WHERE customerNumber = ? AND ${filenameColumn} = ?`,
+              [customerNumber, newFilename],
+              (err, row) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve({ exists: !!row, filename: newFilename });
+                }
+              }
+            );
+          });
+        };
+        
+        // Find an available filename with counter
+        const findAvailableFilename = async () => {
+          let counter = 1;
+          let result;
+          
+          do {
+            try {
+              result = await checkFilenameWithCounter(counter);
+              if (!result.exists) {
+                return result.filename;
+              }
+              counter++;
+            } catch (err) {
+              console.error('Error checking filename:', err);
+              // If there's an error, return a default unique filename
+              return `${nameWithoutExt}(${Date.now()})${extension}`;
+            }
+          } while (counter < 100); // Limit to prevent infinite loops
+          
+          // If we've tried 100 times, use timestamp to ensure uniqueness
+          return `${nameWithoutExt}(${Date.now()})${extension}`;
+        };
+        
+        // Find an available filename and then save the file
+        findAvailableFilename().then(uniqueFilename => {
+          originalFilename = uniqueFilename;
+          saveFileToDatabase();
+        }).catch(err => {
+          console.error('Error finding unique filename:', err);
+          return res.status(500).json({ error: 'Error finding unique filename' });
+        });
+      } else {
+        // No duplicate, proceed with original filename
+        saveFileToDatabase();
+      }
     }
   );
+  
+  // Function to save the file to the database
+  function saveFileToDatabase() {
+    db.run(
+      `INSERT OR REPLACE INTO ${tableName} (customerNumber, ${columnName}, ${descColumn}, ${filenameColumn}, ${customerViewColumn}, ${internalViewColumn}) VALUES (?, ?, ?, ?, ?, ?)`,
+      [customerNumber, file.buffer, description, originalFilename, custView, intView],
+      function(err) {
+        if (err) {
+          console.error(`Database error when uploading to ${tableName}:`, err);
+          return res.status(500).json({ error: 'Database error when uploading media' });
+        }
+        
+        res.json({ 
+          success: true, 
+          filename: originalFilename,
+          message: originalFilename !== file.originalname ? 
+            `File renamed to ${originalFilename} to avoid duplicate` : 
+            'File uploaded successfully'
+        });
+      }
+    );
+  }
 });
 
 // API endpoint to update media view settings
