@@ -498,14 +498,25 @@
 
         </div>
 
-        <div class="form-group" id="companyKeysSection">
-    <h4 style="margin-top: 15px; margin-bottom: 10px; color: #1a365d;">License Keys</h4>
+<div class="form-group" id="companyKeysSection">
+    <h4 style="margin-top: 15px; margin-bottom: 10px; color: #1a365d;">License Management</h4>
+    <div class="form-group">
+        <label for="licenseType">License Type:</label>
+        <select id="licenseType" class="form-control" style="width: 260px; margin-bottom: 10px;">
+            <option value="roof-gutter-attic">Roof/Gutter/Attic</option>
+            <option value="fencing-painting">Fencing/Painting</option>
+            <option value="plumbing-handyman">Plumbing/Handyman</option>
+            <option value="landscaping-pool">Landscaping/Pool Service</option>
+            <option value="remodeling">Remodeling</option>
+            <option value="tech-audio">Tech/Audio</option>
+        </select>
+    </div>
     <div class="form-group">
         <label for="companyKeyInput">Enter License Key:</label>
         <div class="input-group">
             <input type="text" id="companyKeyInput" class="form-control" style="width: 260px;">
             <div class="input-group-append">
-                <button type="button" class="btn btn-primary" onclick="validateCompanyKey()">Validate Key</button>
+                <button type="button" class="btn btn-primary" onclick="validateLicenseKey()">Validate Key</button>
             </div>
         </div>
     </div>
@@ -514,12 +525,13 @@
         <div id="activeKeysList"></div>
     </div>
 </div>
-        <div style="margin-top: 20px; text-align: right;">
-            <button type="button" class="btn btn-primary" onclick="saveCompanyProfile()">Save</button>
-            <button type="button" class="btn" onclick="closeCompanyProfile()" style="margin-left: 10px;">Cancel</button>
-        </div>
+<div style="margin-top: 20px; text-align: right;">
+    <button type="button" class="btn btn-primary" onclick="saveCompanyProfile()">Save</button>
+    <button type="button" class="btn" onclick="closeCompanyProfile()" style="margin-left: 10px;">Cancel</button>
+</div>
     </div>
 </div>
+
 
 
     <h2>Client Profile</h2>
@@ -860,6 +872,19 @@
                 <label for="bcsWarrantyExpiration">Warranty Expiration:</label>
                 <input type="date" id="bcsWarrantyExpiration" readonly>
             </div>
+            <div class="form-group">
+                <label for="roofSalesRep">Sales Rep:</label>
+                <select id="roofSalesRep" onchange="handleRoofSalesRepChange()">
+                <option value="">Select Sales Rep</option>
+                <option value="Angel Alvarez">Angel Alvarez</option>
+                <option value="Esteban Alexander">Esteban Alexander</option>
+                <option value="Lewis Robertson">Lewis Robertson</option>
+                <option value="Scott Wilson">Scott Wilson</option>
+                <option value="other">Other</option>
+                </select>
+                <input type="text" id="roofSalesRepOther" style="display: none; margin-top: 5px;" placeholder="Enter Sales Rep Name">
+            </div>
+ 
         </div>
     </div>
 
@@ -958,6 +983,19 @@
                 <label for="gutterWarrantyExpiration">Warranty Expiration:</label>
                 <input type="date" id="gutterWarrantyExpiration">
             </div>
+            <div class="form-group">
+                <label for="gutterSalesRep">Sales Rep:</label>
+                <select id="gutterSalesRep" onchange="handleGutterSalesRepChange()">
+                <option value="">Select Sales Rep</option>
+                <option value="Angel Alvarez">Angel Alvarez</option>
+                <option value="Esteban Alexander">Esteban Alexander</option>
+                <option value="Lewis Robertson">Lewis Robertson</option>
+                <option value="Scott Wilson">Scott Wilson</option>
+                <option value="other">Other</option>
+                </select>
+                <input type="text" id="gutterSalesRepOther" style="display: none; margin-top: 5px;" placeholder="Enter Sales Rep Name">
+            </div>
+
         </div>
     </div>
 
@@ -1959,24 +1997,66 @@ function hasValidSubscription() {
 
 // Show a specific section if subscription is valid
 function showSection(sectionId) {
-    if (hasValidSubscription()) {
-        // Hide all sections first
-        document.getElementById('subscriptionMessageContainer').style.display = 'none';
-        
-        // Show the requested section
-        const section = document.getElementById(`${sectionId}Section`);
-        section.style.display = 'block';
-         
-        // Reset gutter dropdowns if showing the roofGuttersAttic section
-        if (sectionId === 'roofGuttersAttic') {
-            resetGutterDropdowns();
-        }        
-
-        // Scroll to the section
-        section.scrollIntoView({ behavior: 'smooth' });
-    } else {
+  const companyNumber = document.getElementById('companyNumber').value;
+  
+  if (!companyNumber) {
+    showNotification('Please enter a company number', 'error');
+    return;
+  }
+  
+  // Map section IDs to feature types
+  const sectionFeatureMap = {
+    'roofGuttersAttic': 'roof-gutter-attic',
+    'fencingPainting': 'fencing-painting',
+    'plumbingHandyman': 'plumbing-handyman',
+    'landscapingPool': 'landscaping-pool',
+    'remodeling': 'remodeling',
+    'techAudio': 'tech-audio'
+  };
+  
+  const feature = sectionFeatureMap[sectionId];
+  
+  if (!feature) {
+    // If no feature mapping exists, this is not a premium section
+    showSectionContent(sectionId);
+    return;
+  }
+  
+  // Check if the company has access to this feature
+  fetch(`/api/check-feature-access/${companyNumber}/${feature}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.hasAccess) {
+        // Company has access, show the section
+        showSectionContent(sectionId);
+      } else {
+        // Company doesn't have access, show subscription message
         showSubscriptionMessage();
+      }
+    })
+    .catch(error => {
+      console.error('Error checking feature access:', error);
+      showNotification('An error occurred while checking feature access', 'error');
+    });
+}
+
+function showSectionContent(sectionId) {
+  // Hide all sections first
+  document.getElementById('subscriptionMessageContainer').style.display = 'none';
+  
+  // Show the requested section
+  const section = document.getElementById(`${sectionId}Section`);
+  if (section) {
+    section.style.display = 'block';
+    
+    // Reset gutter dropdowns if showing the roofGuttersAttic section
+    if (sectionId === 'roofGuttersAttic') {
+      resetGutterDropdowns();
     }
+    
+    // Scroll to the section
+    section.scrollIntoView({ behavior: 'smooth' });
+  }
 }
 
 function resetGutterDropdowns() {
@@ -4043,6 +4123,114 @@ function openMedia(mediaId, type) {
   window.open(`/api/media/${type}/${mediaId}?customerNumber=${customerNumber}`, '_blank');
 }
 
+function handleRoofSalesRepChange() {
+  const select = document.getElementById('roofSalesRep');
+  const otherInput = document.getElementById('roofSalesRepOther');
+  
+  if (select.value === 'other') {
+    otherInput.style.display = 'block';
+  } else {
+    otherInput.style.display = 'none';
+    otherInput.value = '';
+  }
+}
+
+function handleGutterSalesRepChange() {
+  const select = document.getElementById('gutterSalesRep');
+  const otherInput = document.getElementById('gutterSalesRepOther');
+  
+  if (select.value === 'other') {
+    otherInput.style.display = 'block';
+  } else {
+    otherInput.style.display = 'none';
+    otherInput.value = '';
+  }
+}
+
+function validateLicenseKey() {
+  const companyNumber = document.getElementById('companyNumber').value;
+  const licenseKey = document.getElementById('licenseKey').value;
+  const licenseType = document.getElementById('licenseType').value;
+  
+  if (!companyNumber || !licenseKey || !licenseType) {
+    showNotification('Please fill in all required fields', 'error');
+    return;
+  }
+  
+  // Show loading state
+  const validateButton = document.getElementById('validateLicenseButton');
+  const originalText = validateButton.textContent;
+  validateButton.textContent = 'Validating...';
+  validateButton.disabled = true;
+  
+  // Send validation request to server
+  fetch('/api/validate-license', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      companyNumber,
+      licenseKey,
+      licenseType
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    // Reset button state
+    validateButton.textContent = originalText;
+    validateButton.disabled = false;
+    
+    if (data.success) {
+      showNotification('License key validated successfully', 'success');
+      updateActiveLicenses();
+    } else {
+      showNotification(`License validation failed: ${data.error}`, 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error validating license:', error);
+    validateButton.textContent = originalText;
+    validateButton.disabled = false;
+    showNotification('An error occurred while validating the license', 'error');
+  });
+}
+
+function updateActiveLicenses() {
+  const companyNumber = document.getElementById('companyNumber').value;
+  
+  if (!companyNumber) {
+    return;
+  }
+  
+  const licenseTypes = [
+    { id: 'roof-gutter-attic', label: 'Roof/Gutter/Attic' },
+    { id: 'fencing-painting', label: 'Fencing/Painting' },
+    { id: 'plumbing-handyman', label: 'Plumbing/Handyman' },
+    { id: 'landscaping-pool', label: 'Landscaping/Pool Service' },
+    { id: 'remodeling', label: 'Remodeling' },
+    { id: 'tech-audio', label: 'Tech/Audio' }
+  ];
+  
+  const activeLicensesContainer = document.getElementById('activeLicenses');
+  activeLicensesContainer.innerHTML = '<h4>Active Licenses:</h4>';
+  
+  // Check each license type
+  licenseTypes.forEach(license => {
+    fetch(`/api/check-feature-access/${companyNumber}/${license.id}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.hasAccess) {
+          const licenseElement = document.createElement('div');
+          licenseElement.innerHTML = `<span style="color: green;">${license.label} - Active</span>`;
+          activeLicensesContainer.appendChild(licenseElement);
+        }
+      })
+      .catch(error => {
+        console.error(`Error checking ${license.id} license:`, error);
+      });
+  });
+}
 
     </script>
 
