@@ -516,7 +516,7 @@
         <div class="input-group">
             <input type="text" id="companyKeyInput" class="form-control" style="width: 260px;">
             <div class="input-group-append">
-                <button type="button" class="btn btn-primary" onclick="validateLicenseKey()">Validate Key</button>
+                <button type="button" class="btn btn-primary" id="validateLicenseButton" onclick="validateLicenseKey()">Validate Key</button>
             </div>
         </div>
     </div>
@@ -4149,7 +4149,7 @@ function handleGutterSalesRepChange() {
 
 function validateLicenseKey() {
   const companyNumber = document.getElementById('companyNumber').value;
-  const licenseKey = document.getElementById('licenseKey').value;
+  const licenseKey = document.getElementById('companyKeyInput').value;
   const licenseType = document.getElementById('licenseType').value;
   
   if (!companyNumber || !licenseKey || !licenseType) {
