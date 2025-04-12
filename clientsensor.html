@@ -537,14 +537,14 @@
     <h2>Client Profile</h2>
 
      <div class="form-group" id="subscriptionSection" style="display: none;">
-    <label for="subscriptionNumber">Subscription Number:</label>
+    <label for="licenseKey">License Key:</label>
     <div class="input-group">
-        <input type="text" id="subscriptionNumber" class="form-control" style="width: 260px;">
+        <input type="text" id="licenseKey" class="form-control" style="width: 260px;">
         <div class="input-group-append">
-            <button type="button" class="btn btn-primary" onclick="validateSubscription()">Validate Subscription</button>
+            <button type="button" id="validateLicenseButton" class="btn btn-primary" onclick="validateLicenseKey()">Validate License</button>
         </div>
     </div>
-    <div id="subscriptionStatus" style="margin-top: 5px; font-size: 0.9em;"></div>
+    <div id="licenseStatus" style="margin-top: 5px; font-size: 0.9em;"></div>
 </div>
 
     
@@ -1363,7 +1363,7 @@ function loadCompanyProfile() {
             if (companyNumber) {
                 loadActiveKeys(companyNumber);
                 // Store only the company number in localStorage for reference
-                localStorage.setItem('companyNumber', companyNumber);
+                
             }
         } else {
             // Clear form if no data available
@@ -1666,68 +1666,6 @@ function loadActiveKeys(companyNumber) {
     });
 }
 
-// Check section access before showing
-function checkSectionAccess(sectionPrefix) {
-    const companyNumber = localStorage.getItem('companyNumber');
-    
-    if (!companyNumber) {
-        showSubscriptionMessage();
-        return;
-    }
-    
-    fetch(`/api/company-active-keys/${companyNumber}`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            showSubscriptionMessage();
-            return;
-        }
-        
-        const activeModules = data.activeModules || [];
-        let hasAccess = false;
-        
-        // Check if any active module matches the section prefix
-        switch(sectionPrefix) {
-            case 'RGA':
-                hasAccess = activeModules.some(module => module.includes('Roof/Gutters/Attic'));
-                if (hasAccess) {
-                    showSection('roofGuttersAttic');
-                } else {
-                    showSubscriptionMessage();
-                }
-                break;
-                
-            case 'FP':
-            case 'PH':
-            case 'LP':
-            case 'REM':
-            case 'TA':
-                // Check if module exists but show coming soon
-                hasAccess = activeModules.some(module => {
-                    if (sectionPrefix === 'FP' && module.includes('Fencing/Painting')) return true;
-                    if (sectionPrefix === 'PH' && module.includes('Plumbing/Handyman')) return true;
-                    if (sectionPrefix === 'LP' && module.includes('Landscaping/Pool Service')) return true;
-                    if (sectionPrefix === 'REM' && module.includes('Remodeling')) return true;
-                    if (sectionPrefix === 'TA' && module.includes('Tech/Audio')) return true;
-                    return false;
-                });
-                
-                if (hasAccess) {
-                    showComingSoonMessage();
-                } else {
-                    showSubscriptionMessage();
-                }
-                break;
-                
-            default:
-                showSubscriptionMessage();
-        }
-    })
-    .catch(error => {
-        console.error('Error checking section access:', error);
-        showSubscriptionMessage();
-    });
-}
 
 // Show coming soon message
 function showComingSoonMessage() {
@@ -1950,50 +1888,6 @@ function generateNewAccessCode() {
     document.getElementById('mobileAccessCode').value = generateAccessCode();
 }
 
-function validateSubscription() {
-    const subscriptionNumber = document.getElementById('subscriptionNumber').value.trim();
-    const statusElement = document.getElementById('subscriptionStatus');
-    const currentSubscriptionElement = document.getElementById('currentSubscription');
-    
-    if (!subscriptionNumber) {
-        statusElement.textContent = 'Please enter a subscription number';
-        statusElement.style.color = 'red';
-        return;
-    }
-    
-    // Here you would typically make an API call to validate the subscription
-    // For now, we'll use a simple check with hardcoded valid subscription numbers
-    const validSubscriptions = ['ROOF123', 'PREMIUM456', 'FULL789'];
-    
-    if (validSubscriptions.includes(subscriptionNumber)) {
-        statusElement.textContent = 'Subscription valid! You have access to Roof/Gutters/Attic section.';
-        statusElement.style.color = 'green';
-        localStorage.setItem('subscriptionNumber', subscriptionNumber);
-        
-        // Update the current subscription display
-        currentSubscriptionElement.textContent = ' (Roof/Gutters/Attic - valid)';
-    } else {
-        statusElement.textContent = 'Invalid subscription number. Please contact sales.';
-        statusElement.style.color = 'red';
-    }
-}
-
-// In the DOMContentLoaded event listener, add:
-const subscription = localStorage.getItem('subscriptionNumber');
-if (subscription) {
-    // Don't set the value in the input field
-    // document.getElementById('subscriptionNumber').value = subscription;
-    
-    // Just update the status
-    document.getElementById('subscriptionStatus').textContent = 'Subscription valid! You have access to Roof/Gutters/Attic section.';
-    document.getElementById('subscriptionStatus').style.color = 'green';
-}
-// Check if user has a valid subscription
-function hasValidSubscription() {
-    const subscription = localStorage.getItem('subscriptionNumber');
-    const validSubscriptions = ['ROOF123', 'PREMIUM456', 'FULL789'];
-    return subscription && validSubscriptions.includes(subscription);
-}
 
 // Show a specific section if subscription is valid
 function showSection(sectionId) {
@@ -4200,8 +4094,21 @@ function updateActiveLicenses() {
   const companyNumber = document.getElementById('companyNumber').value;
   
   if (!companyNumber) {
+    console.error('Company number is missing');
     return;
   }
+  
+  // Get the correct container element
+  const activeLicensesContainer = document.getElementById('activeKeysList');
+  
+  // Add error handling to prevent null reference errors
+  if (!activeLicensesContainer) {
+    console.error('Active licenses container (activeKeysList) not found in the DOM');
+    return;
+  }
+  
+  // Clear the container before adding new content
+  activeLicensesContainer.innerHTML = '';
   
   const licenseTypes = [
     { id: 'roof-gutter-attic', label: 'Roof/Gutter/Attic' },
@@ -4211,9 +4118,6 @@ function updateActiveLicenses() {
     { id: 'remodeling', label: 'Remodeling' },
     { id: 'tech-audio', label: 'Tech/Audio' }
   ];
-  
-  const activeLicensesContainer = document.getElementById('activeLicenses');
-  activeLicensesContainer.innerHTML = '<h4>Active Licenses:</h4>';
   
   // Check each license type
   licenseTypes.forEach(license => {

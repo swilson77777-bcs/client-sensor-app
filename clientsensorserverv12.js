@@ -1330,6 +1330,42 @@ const masterDb = new sqlite3.Database(path.join(__dirname, 'MasterCompanyInfo.db
     }
 });
 
+function logDatabaseWrites(query, params) {
+  if (query.includes('UPDATE CompanyDataKeys') && query.includes('keys1Valid')) {
+    console.log('LICENSE UPDATE DETECTED:');
+    console.log('Query:', query);
+    console.log('Params:', params);
+    console.trace(); // Print stack trace to see where this is being called from
+  }
+}
+
+// Apply this to all database write operations
+const originalRun = masterDb.run;
+masterDb.run = function(query, params, callback) {
+  if (typeof params === 'function') {
+    callback = params;
+    params = [];
+  }
+  
+  logDatabaseWrites(query, params);
+  return originalRun.call(this, query, params, callback);
+};
+
+masterDb.run(`UPDATE CompanyDataKeys SET 
+  keys1Valid = 0, 
+  keys2Valid = 0, 
+  keys3Valid = 0,
+  keys4Valid = 0, 
+  keys5Valid = 0, 
+  keys6Valid = 0 
+  WHERE companyNumber = 'BCS331682'`, (err) => {
+  if (err) {
+    console.error('Error resetting validation fields:', err);
+  } else {
+    console.log('Validation fields reset to 0 for BCS331682');
+  }
+});
+
 app.post('/api/validate-company', (req, res) => {
   const { companyNumber } = req.body;
   
@@ -1400,6 +1436,8 @@ app.post('/api/validate-license', (req, res) => {
     return res.status(400).json({ success: false, error: 'Missing required fields' });
   }
   
+  console.log(`Validating license for company ${companyNumber}, type: ${licenseType}, key: ${licenseKey}`);
+  
   // Map license type to the corresponding database fields
   const keyFieldMap = {
     'roof-gutter-attic': { keyField: 'customerKeys1', validField: 'keys1Valid' },
@@ -1426,37 +1464,66 @@ app.post('/api/validate-license', (req, res) => {
         return res.status(500).json({ success: false, error: 'Database error' });
       }
       
+      // If company doesn't exist, create a new record with all validations set to 0
       if (!row) {
-        return res.status(404).json({ success: false, error: 'Company not found' });
-      }
-      
-      const storedKey = row[keyField];
-      
-      if (licenseKey === storedKey) {
-        // License key is valid, update the validation field
+        console.log(`Company ${companyNumber} not found, creating new record`);
+        
+        // Create default record with ALL validation fields set to 0
         masterDb.run(
-          `UPDATE CompanyDataKeys SET ${validField} = 1 WHERE companyNumber = ?`,
+          `INSERT INTO CompanyDataKeys (
+            companyNumber, 
+            customerKeys1, customerKeys2, customerKeys3, customerKeys4, customerKeys5, customerKeys6,
+            keys1Valid, keys2Valid, keys3Valid, keys4Valid, keys5Valid, keys6Valid
+          ) VALUES (?, '', '', '', '', '', '', 0, 0, 0, 0, 0, 0)`,
           [companyNumber],
-          function(err) {
-            if (err) {
-              console.error('Database error when updating license validation:', err);
+          function(insertErr) {
+            if (insertErr) {
+              console.error('Error creating company record:', insertErr);
               return res.status(500).json({ success: false, error: 'Database error' });
             }
             
-            return res.json({ 
-              success: true, 
-              message: 'License key validated successfully' 
-            });
+            // After creating record, proceed with validation
+            validateLicenseKey(companyNumber, licenseKey, licenseType, keyField, validField, res);
           }
         );
-      } else {
-        return res.json({ 
-          success: false, 
-          error: 'Invalid license key' 
-        });
+        return;
       }
+      
+      // If company exists, proceed with validation
+      validateLicenseKey(companyNumber, licenseKey, licenseType, keyField, validField, res, row[keyField]);
     }
   );
+  
+  // Helper function to validate license key and update database
+  function validateLicenseKey(companyNumber, licenseKey, licenseType, keyField, validField, res, storedKey = '') {
+    console.log(`Validating key: "${licenseKey}" against stored key: "${storedKey}"`);
+    
+    if (licenseKey === storedKey) {
+      // License key is valid, update the validation field
+      masterDb.run(
+        `UPDATE CompanyDataKeys SET ${validField} = 1 WHERE companyNumber = ?`,
+        [companyNumber],
+        function(err) {
+          if (err) {
+            console.error('Database error when updating license validation:', err);
+            return res.status(500).json({ success: false, error: 'Database error' });
+          }
+          
+          console.log(`License validated successfully for ${companyNumber}, ${licenseType}`);
+          return res.json({ 
+            success: true, 
+            message: 'License key validated successfully' 
+          });
+        }
+      );
+    } else {
+      console.log(`Invalid license key for ${companyNumber}, ${licenseType}`);
+      return res.json({ 
+        success: false, 
+        error: 'Invalid license key' 
+      });
+    }
+  }
 });
 
 // API endpoint to check if a company has access to a specific feature
@@ -1800,11 +1867,12 @@ app.get('/api/company-active-keys/:companyNumber', (req, res) => {
         return res.status(400).json({ error: 'Company number is required' });
     }
     
+console.log(`Checking active keys for company: ${companyNumber}`);
     const query = `
         SELECT 
-            companyValidModule1, companyValidModule2, companyValidModule3,
-            companyValidModule4, companyValidModule5, companyValidModule6
-        FROM CompanyProfile 
+            keys1Valid, keys2Valid, keys3Valid,
+            keys4Valid, keys5Valid, keys6Valid
+        FROM CompanyDataKeys 
         WHERE companyNumber = ?
     `;
     
@@ -1817,16 +1885,18 @@ app.get('/api/company-active-keys/:companyNumber', (req, res) => {
             return res.status(404).json({ error: 'Company not found' });
         }
         
-        // Collect all active modules
+  // Log the row data for debugging
+        console.log('Database row:', row);
         const activeModules = [];
-        const moduleFields = ['companyValidModule1', 'companyValidModule2', 'companyValidModule3',
-                             'companyValidModule4', 'companyValidModule5', 'companyValidModule6'];
         
-        for (const field of moduleFields) {
-            if (row[field]) {
-                activeModules.push(row[field]);
-            }
-        }
+        if (Number(row.keys1Valid) === 1) activeModules.push('Roof/Gutter/Attic');
+        if (Number(row.keys2Valid) === 1) activeModules.push('Fencing/Painting');
+        if (Number(row.keys3Valid) === 1) activeModules.push('Plumbing/Handyman');
+        if (Number(row.keys4Valid) === 1) activeModules.push('Landscaping/Pool Service');
+        if (Number(row.keys5Valid) === 1) activeModules.push('Remodeling');
+        if (Number(row.keys6Valid) === 1) activeModules.push('Tech/Audio');
+        
+        console.log('Active modules:', activeModules);
         
         res.json({ activeModules });
     });
