@@ -1902,6 +1902,52 @@ console.log(`Checking active keys for company: ${companyNumber}`);
     });
 });
 
+app.get('/api/check-feature-access/:companyNumber/:featureType', (req, res) => {
+    const { companyNumber, featureType } = req.params;
+    
+    if (!companyNumber || !featureType) {
+        return res.status(400).json({ success: false, error: 'Missing required parameters' });
+    }
+    
+    const featureFieldMap = {
+        'roof-gutter-attic': 'keys1Valid',
+        'fencing-painting': 'keys2Valid',
+        'plumbing-handyman': 'keys3Valid',
+        'landscaping-pool': 'keys4Valid',
+        'remodeling': 'keys5Valid',
+        'tech-audio': 'keys6Valid'
+    };
+    
+    const validField = featureFieldMap[featureType];
+    
+    if (!validField) {
+        return res.status(400).json({ success: false, error: 'Invalid feature type' });
+    }
+    
+    masterDb.get(
+        `SELECT ${validField} FROM CompanyDataKeys WHERE companyNumber = ?`,
+        [companyNumber],
+        (err, row) => {
+            if (err) {
+                console.error('Database error when checking feature access:', err);
+                return res.status(500).json({ success: false, error: 'Database error' });
+            }
+            
+            if (!row) {
+                return res.status(404).json({ success: false, error: 'Company not found' });
+            }
+            
+            const hasAccess = row[validField] === 1;
+            
+            return res.json({ 
+                success: true, 
+                hasAccess: hasAccess 
+            });
+        }
+    );
+});
+
+
 // API endpoint to get customer media
 app.get('/api/customer-media', (req, res) => {
   const { customerNumber } = req.query;

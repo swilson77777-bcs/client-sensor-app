@@ -4136,6 +4136,69 @@ function updateActiveLicenses() {
   });
 }
 
+function checkSectionAccess(sectionCode) {
+    const companyNumber = document.getElementById('companyNumber').value;
+    
+    if (!companyNumber) {
+        showNotification('Please enter a company number', 'error');
+        return;
+    }
+    
+    // Map section codes to feature types
+    const sectionFeatureMap = {
+        'RGA': 'roof-gutter-attic',
+        'FP': 'fencing-painting',
+        'PH': 'plumbing-handyman',
+        'LP': 'landscaping-pool',
+        'REM': 'remodeling',
+        'TA': 'tech-audio'
+    };
+    
+    const featureType = sectionFeatureMap[sectionCode];
+    
+    if (!featureType) {
+        showNotification('Invalid section code', 'error');
+        return;
+    }
+    
+    // Check if the company has access to this feature
+    fetch(`/api/check-feature-access/${companyNumber}/${featureType}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.hasAccess) {
+                // Company has access, show the section
+                showSection(sectionCode);
+            } else {
+                // Company doesn't have access, show subscription message
+                showSubscriptionMessage();
+            }
+        })
+        .catch(error => {
+            console.error('Error checking feature access:', error);
+            showNotification('An error occurred while checking feature access', 'error');
+        });
+}
+
+function showSection(sectionCode) {
+    // Hide all sections first
+    const sections = ['RGA', 'FP', 'PH', 'LP', 'REM', 'TA'];
+    sections.forEach(code => {
+        document.getElementById(`${code}Section`).style.display = 'none';
+    });
+    
+    // Show the requested section
+    const section = document.getElementById(`${sectionCode}Section`);
+    if (section) {
+        section.style.display = 'block';
+        section.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function showSubscriptionMessage() {
+    showNotification('Subscription required for this feature', 'warning');
+}
+
+
     </script>
 
     
