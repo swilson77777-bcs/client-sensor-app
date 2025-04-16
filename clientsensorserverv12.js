@@ -14,7 +14,7 @@ const upload = multer({
 
 
 
-
+app.use(express.static('public'));
 
 // Database connection
 const db = new sqlite3.Database(path.join(__dirname, '..', 'Sensors', 'BCS_data.db'));

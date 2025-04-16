@@ -824,13 +824,15 @@
 
 <div class="button-group" style="display: flex; justify-content: center; flex-wrap: wrap;">
     <button type="button" onclick="checkSectionAccess('RGA')" class="feature-button" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Roof/Gutters/Attic</button>
-    <button type="button" onclick="checkSectionAccess('FP')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Fencing/Painting</button>
+    <button type="button" id="fencingPaintingBtn" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Fencing/Painting</button>
     <button type="button" onclick="checkSectionAccess('PH')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Plumbing/Handyman</button>
     <button type="button" onclick="checkSectionAccess('LP')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Landscaping/Pool Service</button>
     <button type="button" onclick="checkSectionAccess('REM')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Remodeling</button>
     <button type="button" onclick="checkSectionAccess('TA')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Tech/Audio</button>
 </div>
     </form>
+
+
 
 <div id="roofGuttersAtticSection" style="display: none;">
     <!-- Existing Roof and Gutter sections --><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; margin-bottom: 10px;">
@@ -1320,6 +1322,8 @@
    </div>
  </div>
 
+<div id="sectionContainer"></div>
+
     <script>
      // Force immediate scroll to top when script loads
 window.scrollTo(0, 0);
@@ -1338,6 +1342,13 @@ window.addEventListener('load', function() {
         behavior: 'auto'
     });
 });
+
+// Map license types to template IDs
+  const sectionTemplates = {
+    'FP': 'fencePaintingTemplate',
+    'RGA': 'roofGutterTemplate',
+    // Add other mappings here
+  };
 
 function validateCompanyNumber() {
   const companyNumber = document.getElementById('companyNumberInput').value;
@@ -4329,7 +4340,22 @@ function showFencePaintingSection() {
   }
 }
 
-
+document.addEventListener('DOMContentLoaded', function() {
+  // Your existing code here, including:
+  document.getElementById('fencingPaintingBtn').addEventListener('click', async () => {
+    try {
+      const isValid = await checkSectionAccess('FP');
+      if (isValid) {
+        const response = await fetch('/fencePaintingSection.html');
+        const html = await response.text();
+        document.getElementById('sectionContainer').innerHTML = html;
+        console.log('Container element:', document.getElementById('sectionContainer'));
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  });
+});
 
     </script>
 
@@ -4475,6 +4501,59 @@ function showFencePaintingSection() {
   </div>
 </div>
 
+<template id="fencePaintingTemplate">
+  <div id="fencePaintingSection">
+    <div style="display: flex; gap: 5%; margin-top: 20px;">
+      <!-- Fencing Information -->
+      <div style="background-color: #d7ebf9; padding: 20px; border-radius: 10px; width: 45%;">
+        <h3><strong>Fencing Information</strong></h3>
+        <hr style="border: 2px solid #000000; width: 95%;">
+        <label>Fence Type:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Material:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Height:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Color:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Style:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Owner Status:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Install Date:</label><br>
+        <input type="date"><br><br>
+        <label>Warranty Expiration:</label><br>
+        <input type="date"><br><br>
+        <label>Sales Rep:</label><br>
+        <select><option>Select Sales Rep</option></select>
+      </div>
+
+      <!-- Painting Information -->
+      <div style="background-color: #d7ebf9; padding: 20px; border-radius: 10px; width: 45%;">
+        <h3><strong>Painting Information</strong></h3>
+        <hr style="border: 2px solid #000000; width: 95%;">
+        <label>Paint Type:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Color:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Brand:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Finish:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Area Painted:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Owner Status:</label><br>
+        <select><option>Select...</option></select><br><br>
+        <label>Paint Date:</label><br>
+        <input type="date"><br><br>
+        <label>Warranty Expiration:</label><br>
+        <input type="date"><br><br>
+        <label>Sales Rep:</label><br>
+        <select><option>Select Sales Rep</option></select>
+      </div>
+    </div>
+  </div>
+</template>
 
 
 
