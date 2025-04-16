@@ -625,6 +625,9 @@
     <div class="form-group">
                 <label for="customerNumber">Customer #:</label>
                 <input type="text" id="searchcustomerNumber" class="wide-input">
+                <div style="text-align: center; margin-top: 30px;">
+                    <img src="CCR.png" alt="CCR Logo" style="max-width: 300px;">
+                </div>
             </div>
 
         </div>
@@ -820,7 +823,7 @@
 
 
 <div class="button-group" style="display: flex; justify-content: center; flex-wrap: wrap;">
-    <button type="button" onclick="checkSectionAccess('RGA')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Roof/Gutters/Attic</button>
+    <button type="button" onclick="checkSectionAccess('RGA')" class="feature-button" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Roof/Gutters/Attic</button>
     <button type="button" onclick="checkSectionAccess('FP')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Fencing/Painting</button>
     <button type="button" onclick="checkSectionAccess('PH')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Plumbing/Handyman</button>
     <button type="button" onclick="checkSectionAccess('LP')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Landscaping/Pool Service</button>
@@ -863,6 +866,18 @@
                 <label for="ventType">Vent Type:</label>
                 <select id="ventType"></select>
             </div>
+            <div class="form-group">
+                <label for="clientType">Owner Status:</label>
+                <select id="clientType">
+                    <option value="" selected>Select</option>
+                    <option value="Primary">Primary</option>
+                    <option value="Secondary">Secondary</option>
+                    <option value="Tertiary">Tertiary</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+
             <!-- Install Date and Warranty Expiration -->
             <div class="form-group">
                 <label for="installDate">Install Date:</label>
@@ -1000,6 +1015,9 @@
     </div>
 
 </div> <!-- End of Grid Layout -->
+
+
+
 
 <div class="referral-container" style="background-color: #f0f8ff; padding: 20px; border-radius: 8px; margin-top: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
 
@@ -4167,7 +4185,19 @@ function checkSectionAccess(sectionCode) {
         .then(data => {
             if (data.success && data.hasAccess) {
                 // Company has access, show the section
-                showSection(sectionCode);
+                if (sectionCode === 'RGA') {
+                    showRoofGuttersAtticSection();
+                } else if (sectionCode === 'FP') {
+                    showFencingPaintingSection();
+                } else if (sectionCode === 'PH') {
+                    showPlumbingHandymanSection();
+                } else if (sectionCode === 'LP') {
+                    showLandscapingPoolSection();
+                } else if (sectionCode === 'REM') {
+                    showRemodelingSection();
+                } else if (sectionCode === 'TA') {
+                    showTechAudioSection();
+                }
             } else {
                 // Company doesn't have access, show subscription message
                 showSubscriptionMessage();
@@ -4175,9 +4205,35 @@ function checkSectionAccess(sectionCode) {
         })
         .catch(error => {
             console.error('Error checking feature access:', error);
-            showNotification('An error occurred while checking feature access', 'error');
+            alert('An error occurred while checking feature access');
         });
 }
+
+function showRoofGuttersAtticSection() {
+    // Hide all sections first
+    hideAllSections();
+    
+    // Show the Roof/Gutters/Attic section
+    document.getElementById('roofGuttersAtticSection').style.display = 'block';
+    
+    // Reset gutter dropdowns if needed
+    resetGutterDropdowns();
+    
+    // Scroll to the section
+    document.getElementById('roofGuttersAtticSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideAllSections() {
+    // Hide all section containers
+    const sections = document.querySelectorAll('.section-container');
+    sections.forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Also hide subscription message if it's showing
+    document.getElementById('subscriptionMessageContainer').style.display = 'none';
+}
+
 
 function showSection(sectionCode) {
     // Hide all sections first
@@ -4197,6 +4253,27 @@ function showSection(sectionCode) {
 function showSubscriptionMessage() {
     showNotification('Subscription required for this feature', 'warning');
 }
+
+function showFencePaintingSection() {
+  // Hide other sections
+  document.getElementById('roofGuttersAtticSection').style.display = 'none';
+  // ...hide other sections as needed...
+
+  // Load or show the fencing/painting section
+  const container = document.getElementById('fencePaintingSectionContainer');
+  if (!document.getElementById('fencePaintingSection')) {
+    // Load the HTML partial only once
+    fetch('fencePaintingSection.html')
+      .then(response => response.text())
+      .then(html => {
+        container.innerHTML = html;
+        document.getElementById('fencePaintingSection').style.display = 'block';
+      });
+  } else {
+    document.getElementById('fencePaintingSection').style.display = 'block';
+  }
+}
+
 
 
     </script>
