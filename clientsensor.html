@@ -4225,13 +4225,22 @@ function showRoofGuttersAtticSection() {
 
 function hideAllSections() {
     // Hide all section containers
-    const sections = document.querySelectorAll('.section-container');
-    sections.forEach(section => {
-        section.style.display = 'none';
+    const sections = [
+        'roofGuttersAtticSection',
+        'fencingPaintingSection',
+        'plumbingHandymanSection',
+        'landscapingPoolSection',
+        'remodelingSection',
+        'techAudioSection',
+        'subscriptionMessageContainer'
+    ];
+
+    sections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.style.display = 'none';
+        }
     });
-    
-    // Also hide subscription message if it's showing
-    document.getElementById('subscriptionMessageContainer').style.display = 'none';
 }
 
 
@@ -4249,6 +4258,52 @@ function showSection(sectionCode) {
         section.scrollIntoView({ behavior: 'smooth' });
     }
 }
+
+function showFencingPaintingSection() {
+    // Hide all sections first
+    const sections = [
+        'roofGuttersAtticSection',
+        'plumbingHandymanSection',
+        'landscapingPoolSection',
+        'remodelingSection',
+        'techAudioSection',
+        'subscriptionMessageContainer'
+    ];
+    
+    sections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.style.display = 'none';
+        }
+    });
+
+    // Get the container where we'll load the Fencing/Painting section
+    const container = document.getElementById('fencePaintingSectionContainer');
+    
+    // Check if the section is already loaded
+    if (!document.getElementById('fencingPaintingSection')) {
+        // Load the HTML partial only once
+        fetch('fencePaintingSection.html')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(html => {
+                container.innerHTML = html;
+                document.getElementById('fencingPaintingSection').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error loading Fencing/Painting section:', error);
+                container.innerHTML = '<div class="error-message">Error loading Fencing/Painting section</div>';
+            });
+    } else {
+        // If already loaded, just show it
+        document.getElementById('fencingPaintingSection').style.display = 'block';
+    }
+}
+
 
 function showSubscriptionMessage() {
     showNotification('Subscription required for this feature', 'warning');
