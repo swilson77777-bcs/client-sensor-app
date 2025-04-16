@@ -1428,7 +1428,7 @@ function loadActiveKeys(companyNumber) {
     });
 }
 
-// API endpoint to validate license keys
+// clientsensorserverv12.js
 app.post('/api/validate-license', (req, res) => {
   const { companyNumber, licenseKey, licenseType } = req.body;
   
@@ -1436,16 +1436,13 @@ app.post('/api/validate-license', (req, res) => {
     return res.status(400).json({ success: false, error: 'Missing required fields' });
   }
   
-  console.log(`Validating license for company ${companyNumber}, type: ${licenseType}, key: ${licenseKey}`);
-  
-  // Map license type to the corresponding database fields
   const keyFieldMap = {
-    'roof-gutter-attic': { keyField: 'customerKeys1', validField: 'keys1Valid' },
-    'fencing-painting': { keyField: 'customerKeys2', validField: 'keys2Valid' },
-    'plumbing-handyman': { keyField: 'customerKeys3', validField: 'keys3Valid' },
-    'landscaping-pool': { keyField: 'customerKeys4', validField: 'keys4Valid' },
-    'remodeling': { keyField: 'customerKeys5', validField: 'keys5Valid' },
-    'tech-audio': { keyField: 'customerKeys6', validField: 'keys6Valid' }
+    'roof-gutter-attic': { keyField: 'customKeys1', validField: 'keys1Valid' },
+    'fencing-painting': { keyField: 'customKeys2', validField: 'keys2Valid' },
+    'plumbing-handyman': { keyField: 'customKeys3', validField: 'keys3Valid' },
+    'landscaping-pool': { keyField: 'customKeys4', validField: 'keys4Valid' },
+    'remodeling': { keyField: 'customKeys5', validField: 'keys5Valid' },
+    'tech-audio': { keyField: 'customKeys6', validField: 'keys6Valid' }
   };
   
   const { keyField, validField } = keyFieldMap[licenseType] || {};
@@ -1453,46 +1450,69 @@ app.post('/api/validate-license', (req, res) => {
   if (!keyField || !validField) {
     return res.status(400).json({ success: false, error: 'Invalid license type' });
   }
-  
-  // Check if the license key matches what's in the database
+
   masterDb.get(
-    `SELECT ${keyField} FROM CompanyDataKeys WHERE companyNumber = ?`,
+    `SELECT ${keyField}, ${validField} FROM CompanyDataKeys WHERE companyNumber = ?`,
     [companyNumber],
     (err, row) => {
       if (err) {
-        console.error('Database error when validating license:', err);
+        console.error('Database error:', err);
         return res.status(500).json({ success: false, error: 'Database error' });
       }
-      
-      // If company doesn't exist, create a new record with all validations set to 0
+
+      // Create company record if not exists
       if (!row) {
-        console.log(`Company ${companyNumber} not found, creating new record`);
-        
-        // Create default record with ALL validation fields set to 0
-        masterDb.run(
-          `INSERT INTO CompanyDataKeys (
-            companyNumber, 
-            customerKeys1, customerKeys2, customerKeys3, customerKeys4, customerKeys5, customerKeys6,
-            keys1Valid, keys2Valid, keys3Valid, keys4Valid, keys5Valid, keys6Valid
-          ) VALUES (?, '', '', '', '', '', '', 0, 0, 0, 0, 0, 0)`,
-          [companyNumber],
-          function(insertErr) {
-            if (insertErr) {
-              console.error('Error creating company record:', insertErr);
-              return res.status(500).json({ success: false, error: 'Database error' });
-            }
-            
-            // After creating record, proceed with validation
-            validateLicenseKey(companyNumber, licenseKey, licenseType, keyField, validField, res);
+        const insertQuery = `INSERT INTO CompanyDataKeys (
+          companyNumber, ${keyField}, ${validField},
+          customKeys1, customKeys2, customKeys3, customKeys4, customKeys5, customKeys6,
+          keys1Valid, keys2Valid, keys3Valid, keys4Valid, keys5Valid, keys6Valid
+        ) VALUES (?, ?, 0, '', '', '', '', '', '', 0, 0, 0, 0, 0, 0)`;
+
+        masterDb.run(insertQuery, [companyNumber, licenseKey], function(insertErr) {
+          if (insertErr) {
+            console.error('Insert error:', insertErr);
+            return res.status(500).json({ success: false, error: 'Database error' });
           }
-        );
+          return res.json({
+            success: true,
+            licenseType: licenseType,
+            validField: validField,
+            keysValid: 1
+          });
+        });
         return;
       }
-      
-      // If company exists, proceed with validation
-      validateLicenseKey(companyNumber, licenseKey, licenseType, keyField, validField, res, row[keyField]);
+
+      // Check for exact key match
+      const storedKeys = row[keyField]?.split(',').map(k => k.trim()) || [];
+      const isValid = storedKeys.includes(licenseKey.trim());
+
+      if (isValid) {
+        masterDb.run(
+          `UPDATE CompanyDataKeys SET ${validField} = 1 WHERE companyNumber = ?`,
+          [companyNumber],
+          function(updateErr) {
+            if (updateErr) {
+              console.error('Update error:', updateErr);
+              return res.status(500).json({ success: false, error: 'Database error' });
+            }
+            res.json({
+              success: true,
+              licenseType: licenseType,
+              validField: validField,
+              keysValid: 1
+            });
+          }
+        );
+      } else {
+        res.json({ 
+          success: false,
+          error: `Invalid ${licenseType.replace('-', ' ')} license key`
+        });
+      }
     }
   );
+});
   
   // Helper function to validate license key and update database
   function validateLicenseKey(companyNumber, licenseKey, licenseType, keyField, validField, res, storedKey = '') {
@@ -1530,11 +1550,6 @@ app.post('/api/validate-license', (req, res) => {
 app.get('/api/check-feature-access/:companyNumber/:feature', (req, res) => {
   const { companyNumber, feature } = req.params;
   
-  if (!companyNumber || !feature) {
-    return res.status(400).json({ success: false, error: 'Missing required parameters' });
-  }
-  
-  // Map feature to the corresponding validation field
   const featureFieldMap = {
     'roof-gutter-attic': 'keys1Valid',
     'fencing-painting': 'keys2Valid',
@@ -1547,33 +1562,38 @@ app.get('/api/check-feature-access/:companyNumber/:feature', (req, res) => {
   const validField = featureFieldMap[feature];
   
   if (!validField) {
-    return res.status(400).json({ success: false, error: 'Invalid feature' });
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Invalid feature type' 
+    });
   }
   
-  // Check if the company has access to the feature
   masterDb.get(
     `SELECT ${validField} FROM CompanyDataKeys WHERE companyNumber = ?`,
     [companyNumber],
     (err, row) => {
       if (err) {
-        console.error('Database error when checking feature access:', err);
-        return res.status(500).json({ success: false, error: 'Database error' });
+        console.error('Database error:', err);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Database error' 
+        });
       }
       
       if (!row) {
-        return res.status(404).json({ success: false, error: 'Company not found' });
+        return res.json({ 
+          success: false, 
+          error: 'Company not found' 
+        });
       }
       
-      const hasAccess = row[validField] === 1;
-      
-      return res.json({ 
-        success: true, 
-        hasAccess: hasAccess 
+      res.json({ 
+        success: true,
+        hasAccess: row[validField] === 1 
       });
     }
-  );
+  ); // <-- Closing parenthesis was missing here
 });
-
 
 // Helper function to get file extension from MIME type
 function getExtension(mimeType) {
