@@ -30,11 +30,19 @@ db.run(`CREATE TABLE IF NOT EXISTS NotesLog (
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'Sensors')));
+app.use(express.static(path.join(__dirname, '..', 'Sensors'))); // Keep your existing static path
 
+// Add these new static paths
+app.use(express.static(path.join(__dirname, 'public'))); // Serve from public folder
+app.use(express.static(path.join(__dirname))); // Serve from current directory
 // Serve the main entry form
+
 app.get(['/', '/Sensors'], (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'Sensors', 'clientsensor.html'));
+});
+
+app.get('/fencePaintingSection.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'fencePaintingSection.html'));
 });
 
 // Get dropdown data

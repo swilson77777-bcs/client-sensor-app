@@ -824,7 +824,7 @@
 
 <div class="button-group" style="display: flex; justify-content: center; flex-wrap: wrap;">
     <button type="button" onclick="checkSectionAccess('RGA')" class="feature-button" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Roof/Gutters/Attic</button>
-    <button type="button" onclick="checkSectionAccess('FP')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Fencing/Painting</button>
+    <button id="fencingPaintingBtn" type="button" onclick="checkSectionAccess('FP')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Fencing/Painting</button>
     <button type="button" onclick="checkSectionAccess('PH')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Plumbing/Handyman</button>
     <button type="button" onclick="checkSectionAccess('LP')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Landscaping/Pool Service</button>
     <button type="button" onclick="checkSectionAccess('REM')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Remodeling</button>
@@ -1410,9 +1410,17 @@ function validateCompanyNumber() {
                 showNotification('Login successful', 'success');
                 
                 // Update UI based on license keys if the function exists
-                if (typeof updateFeatureButtonsVisibility === 'function') {
-                    updateFeatureButtonsVisibility();
-                }
+                // Delay the execution to ensure DOM is fully loaded
+                setTimeout(() => {
+                    if (typeof updateFeatureButtonsVisibility === 'function') {
+                        try {
+                            updateFeatureButtonsVisibility();
+                        } catch (err) {
+                            console.error('Error updating feature buttons:', err);
+                            // Continue execution even if button visibility update fails
+                        }
+                    }
+                }, 100);
             } catch (e) {
                 console.error('Error storing data in sessionStorage:', e);
                 showNotification('Login successful, but there was an error storing user data', 'warning');
@@ -1610,52 +1618,42 @@ function openCompanyProfile() {
                 console.log(el.id);
             });
             
-            // Populate fields with a more robust approach
-            const fieldMappings = {
-                // Map database fields to form field IDs
-                'companyName': ['companyName'],
-                'companyNumber': ['companyNumber'],
-                'companyAddress': ['streetAddress', 'companyAddress'],
-                'companyCity': ['city', 'companyCity'],
-                'companyState': ['state', 'companyState'],
-                'CompanyZipCode': ['zipCode', 'companyZipCode'],
-                'companyFirstName': ['firstName', 'companyFirstName'],
-                'companyLastName': ['lastName', 'companyLastName'],
-                'companyPhoneNumber': ['phoneNumber', 'companyPhoneNumber'],
-                'companyEmail': ['email', 'companyEmail']
+            // Map database fields to form field IDs based on your actual HTML structure
+            // These IDs should match exactly what's in your HTML
+            const fieldMap = {
+                'companyName': 'companyName',
+                'companyNumber': 'companyNumber',
+                'companyAddress': 'companyStreet',
+                'companyCity': 'companyCity',
+                'companyState': 'companyState',
+                'CompanyZipCode': 'companyZip',
+                'companyFirstName': 'contactFirstName',
+                'companyLastName': 'contactLastName',
+                'companyPhoneNumber': 'companyPhone',
+                'companyEmail': 'companyEmail'
             };
             
-            // Try to populate each field using multiple possible IDs
-            for (const [dataField, fieldIds] of Object.entries(fieldMappings)) {
-                const value = companyData[dataField] || '';
-                console.log(`Trying to populate ${dataField} with value: ${value}`);
-                
-                let fieldPopulated = false;
-                for (const fieldId of fieldIds) {
-                    const element = document.getElementById(fieldId);
-                    if (element) {
-                        if (element.tagName === 'SELECT') {
-                            // Handle select elements
-                            for (let i = 0; i < element.options.length; i++) {
-                                if (element.options[i].value === value) {
-                                    element.selectedIndex = i;
-                                    fieldPopulated = true;
-                                    console.log(`Populated select field ${fieldId} with value ${value}`);
-                                    break;
-                                }
+            // Populate each field
+            for (const [dbField, formFieldId] of Object.entries(fieldMap)) {
+                const element = document.getElementById(formFieldId);
+                if (element) {
+                    const value = companyData[dbField] || '';
+                    console.log(`Setting ${formFieldId} to ${value}`);
+                    
+                    if (element.tagName === 'SELECT') {
+                        // Handle select elements
+                        for (let i = 0; i < element.options.length; i++) {
+                            if (element.options[i].value === value) {
+                                element.selectedIndex = i;
+                                break;
                             }
-                        } else {
-                            // Handle input elements
-                            element.value = value;
-                            fieldPopulated = true;
-                            console.log(`Populated input field ${fieldId} with value ${value}`);
                         }
-                        break;
+                    } else {
+                        // Handle input elements
+                        element.value = value;
                     }
-                }
-                
-                if (!fieldPopulated) {
-                    console.warn(`Could not find any field to populate with ${dataField}`);
+                } else {
+                    console.warn(`Field ${formFieldId} not found in the DOM`);
                 }
             }
             
@@ -4504,14 +4502,19 @@ function updateFeatureButtonsVisibility() {
     const keys5Valid = sessionStorage.getItem('keys5Valid') === '1';
     const keys6Valid = sessionStorage.getItem('keys6Valid') === '1';
     
-    // Update button event listeners based on license keys
-    document.getElementById('fencingPaintingBtn').onclick = keys2Valid ? 
-        function() { showFencingPaintingSection(); } : 
-        function() { showLicenseRequiredNotification('Fencing/Painting'); };
+    // Add null check for fencingPaintingBtn
+    const fencingPaintingBtn = document.getElementById('fencingPaintingBtn');
+    if (fencingPaintingBtn) {
+        fencingPaintingBtn.onclick = keys2Valid ? 
+            function() { showFencingPaintingSection(); } : 
+            function() { showLicenseRequiredNotification('Fencing/Painting'); };
+    } else {
+        console.warn('fencingPaintingBtn element not found in the DOM');
+    }
     
-    // You can add similar logic for other feature buttons as needed
+    // Add similar null checks for other buttons
+    // ...
 }
-
 
 function showFencingPaintingSection() {
     // Check if the user has the Fencing/Painting license
