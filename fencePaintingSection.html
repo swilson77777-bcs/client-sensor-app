@@ -1,51 +1,384 @@
 <!-- fencePaintingSection.html -->
-<div id="fencePaintingSection" style="display:none;">
-  <div style="display: flex; gap: 5%; margin-top: 20px;">
-    <!-- Fencing Information -->
-    <div style="background-color: #d7ebf9; padding: 20px; border-radius: 10px; width: 45%;">
-      <h3><strong>Fencing Information</strong></h3>
-      <hr style="border: 2px solid #000000; width: 95%;">
-      <label>Fence Type:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Material:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Height:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Color:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Style:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Owner Status:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Install Date:</label><br>
-      <input type="date"><br><br>
-      <label>Warranty Expiration:</label><br>
-      <input type="date"><br><br>
-      <label>Sales Rep:</label><br>
-      <select><option>Select Sales Rep</option></select>
+<div id="fencingPaintingSection" style="display:block;">
+    <div style="display: flex; gap: 5%; margin-top: 20px;">
+        <!-- Fencing Information -->
+        <div style="background-color: #d7ebf9; padding: 20px; border-radius: 10px; width: 45%;">
+            <h3><strong>Fencing Information</strong></h3>
+            <hr style="border: 2px solid #000000; width: 95%;">
+            
+            <label>Fence Type:</label><br>
+            <select id="fenceType">
+                <option>Select...</option>
+                <option value="Privacy">Privacy</option>
+                <option value="Picket">Picket</option>
+                <option value="Chain Link">Chain Link</option>
+                <option value="Wrought Iron">Wrought Iron</option>
+                <option value="Vinyl">Vinyl</option>
+                <option value="Aluminum">Aluminum</option>
+                <option value="Composite">Composite</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Material:</label><br>
+            <select id="fenceMaterial">
+                <option>Select...</option>
+                <option value="Wood">Wood</option>
+                <option value="Vinyl">Vinyl</option>
+                <option value="Metal">Metal</option>
+                <option value="Composite">Composite</option>
+                <option value="Stone">Stone</option>
+                <option value="Concrete">Concrete</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Height:</label><br>
+            <select id="fenceHeight">
+                <option>Select...</option>
+                <option value="3 ft">3 ft</option>
+                <option value="4 ft">4 ft</option>
+                <option value="5 ft">5 ft</option>
+                <option value="6 ft">6 ft</option>
+                <option value="7 ft">7 ft</option>
+                <option value="8 ft">8 ft</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Color:</label><br>
+            <select id="fenceColor">
+                <option>Select...</option>
+                <option value="Natural">Natural</option>
+                <option value="White">White</option>
+                <option value="Brown">Brown</option>
+                <option value="Black">Black</option>
+                <option value="Gray">Gray</option>
+                <option value="Green">Green</option>
+                <option value="Custom">Custom</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Style:</label><br>
+            <select id="fenceStyle">
+                <option>Select...</option>
+                <option value="Traditional">Traditional</option>
+                <option value="Modern">Modern</option>
+                <option value="Rustic">Rustic</option>
+                <option value="Decorative">Decorative</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Owner Status:</label><br>
+            <select id="fenceOwnerStatus">
+                <option>Select...</option>
+                <option value="Primary">Primary</option>
+                <option value="Secondary">Secondary</option>
+                <option value="Tertiary">Tertiary</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Install Date:</label><br>
+            <input type="date" id="fenceInstallDate"><br><br>
+            
+            <label>Warranty Expiration:</label><br>
+            <input type="date" id="fenceWarrantyExpiration"><br><br>
+            
+            <label>Sales Rep:</label><br>
+            <select id="fenceSalesRep">
+                <option>Select Sales Rep</option>
+                <option value="Angel Alvarez">Angel Alvarez</option>
+                <option value="Esteban Alexander">Esteban Alexander</option>
+                <option value="Lewis Robertson">Lewis Robertson</option>
+                <option value="Scott Wilson">Scott Wilson</option>
+                <option value="other">Other</option>
+            </select>
+            <input type="text" id="fenceSalesRepOther" style="display: none; margin-top: 5px;" placeholder="Enter Sales Rep Name">
+        </div>
+        
+        <!-- Painting Information -->
+        <div style="background-color: #d7ebf9; padding: 20px; border-radius: 10px; width: 45%;">
+            <h3><strong>Painting Information</strong></h3>
+            <hr style="border: 2px solid #000000; width: 95%;">
+            
+            <label>Paint Type:</label><br>
+            <select id="paintType">
+                <option>Select...</option>
+                <option value="Latex">Latex</option>
+                <option value="Oil-based">Oil-based</option>
+                <option value="Acrylic">Acrylic</option>
+                <option value="Enamel">Enamel</option>
+                <option value="Chalk">Chalk</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Color:</label><br>
+            <select id="paintColor">
+                <option>Select...</option>
+                <option value="White">White</option>
+                <option value="Off-White">Off-White</option>
+                <option value="Beige">Beige</option>
+                <option value="Gray">Gray</option>
+                <option value="Blue">Blue</option>
+                <option value="Green">Green</option>
+                <option value="Red">Red</option>
+                <option value="Yellow">Yellow</option>
+                <option value="Brown">Brown</option>
+                <option value="Black">Black</option>
+                <option value="Custom">Custom</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Brand:</label><br>
+            <select id="paintBrand">
+                <option>Select...</option>
+                <option value="Behr">Behr</option>
+                <option value="Sherwin-Williams">Sherwin-Williams</option>
+                <option value="Benjamin Moore">Benjamin Moore</option>
+                <option value="Valspar">Valspar</option>
+                <option value="PPG">PPG</option>
+                <option value="Glidden">Glidden</option>
+                <option value="Dunn-Edwards">Dunn-Edwards</option>
+                <option value="Dutch Boy">Dutch Boy</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Finish:</label><br>
+            <select id="paintFinish">
+                <option>Select...</option>
+                <option value="Flat">Flat</option>
+                <option value="Matte">Matte</option>
+                <option value="Eggshell">Eggshell</option>
+                <option value="Satin">Satin</option>
+                <option value="Semi-Gloss">Semi-Gloss</option>
+                <option value="Gloss">Gloss</option>
+                <option value="High-Gloss">High-Gloss</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Area Painted:</label><br>
+            <select id="areaPainted">
+                <option>Select...</option>
+                <option value="Exterior">Exterior</option>
+                <option value="Interior">Interior</option>
+                <option value="Both">Both</option>
+                <option value="Specific Rooms">Specific Rooms</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Owner Status:</label><br>
+            <select id="paintOwnerStatus">
+                <option>Select...</option>
+                <option value="Primary">Primary</option>
+                <option value="Secondary">Secondary</option>
+                <option value="Tertiary">Tertiary</option>
+                <option value="Other">Other</option>
+            </select><br><br>
+            
+            <label>Paint Date:</label><br>
+            <input type="date" id="paintDate"><br><br>
+            
+            <label>Warranty Expiration:</label><br>
+            <input type="date" id="paintWarrantyExpiration"><br><br>
+            
+            <label>Sales Rep:</label><br>
+            <select id="paintSalesRep">
+                <option>Select Sales Rep</option>
+                <option value="Angel Alvarez">Angel Alvarez</option>
+                <option value="Esteban Alexander">Esteban Alexander</option>
+                <option value="Lewis Robertson">Lewis Robertson</option>
+                <option value="Scott Wilson">Scott Wilson</option>
+                <option value="other">Other</option>
+            </select>
+            <input type="text" id="paintSalesRepOther" style="display: none; margin-top: 5px;" placeholder="Enter Sales Rep Name">
+        </div>
     </div>
-    <!-- Painting Information -->
-    <div style="background-color: #d7ebf9; padding: 20px; border-radius: 10px; width: 45%;">
-      <h3><strong>Painting Information</strong></h3>
-      <hr style="border: 2px solid #000000; width: 95%;">
-      <label>Paint Type:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Color:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Brand:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Finish:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Area Painted:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Owner Status:</label><br>
-      <select><option>Select...</option></select><br><br>
-      <label>Paint Date:</label><br>
-      <input type="date"><br><br>
-      <label>Warranty Expiration:</label><br>
-      <input type="date"><br><br>
-      <label>Sales Rep:</label><br>
-      <select><option>Select Sales Rep</option></select>
+    
+    <!-- Referral Information -->
+    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin-top: 20px;">
+        <h3 style="margin-top: 0; border-bottom: 4px solid #000;"><strong>Referral Information</strong></h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label for="referralFirstName">First Name:</label>
+                <input type="text" id="referralFirstName" class="wide-input">
+            </div>
+            <div class="form-group">
+                <label for="referralLastName">Last Name:</label>
+                <input type="text" id="referralLastName" class="wide-input">
+            </div>
+            <div class="form-group">
+                <label for="referralPhone">Phone:</label>
+                <input type="tel" id="referralPhone" class="wide-input" placeholder="(xxx) xxx-xxxx">
+            </div>
+            <div class="form-group">
+                <label for="referralEmail">Email:</label>
+                <input type="email" id="referralEmail" class="wide-input">
+            </div>
+        </div>
     </div>
-  </div>
+    
+    <!-- Notes Section -->
+    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin-top: 20px;">
+        <h3 style="margin-top: 0; border-bottom: 4px solid #000;"><strong>Notes</strong></h3>
+        <div class="form-group">
+            <textarea id="notesTextarea" rows="4" style="width: 100%; margin-bottom: 10px;"></textarea>
+            <button type="button" class="btn btn-primary" onclick="addNote()">Add Note</button>
+        </div>
+        <div id="notesList" style="margin-top: 10px;"></div>
+    </div>
+    
+    <!-- Documents/Images/Videos Section -->
+    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin-top: 20px;">
+        <h3 style="margin-top: 0; border-bottom: 4px solid #000;"><strong>Documents/Images/Videos</strong></h3>
+        <div class="form-group">
+            <input type="file" id="fileUpload" multiple>
+            <button type="button" class="btn btn-primary" style="margin-top: 10px;" onclick="uploadFiles()">Upload Files</button>
+        </div>
+        <div id="filesList" style="margin-top: 10px;"></div>
+    </div>
+    
+    <script>
+        // Initialize the Fencing/Painting section
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if the user has the required license
+            if (sessionStorage.getItem('keys2Valid') !== '1') {
+                // If not, show a notification and hide the section
+                showNotification('License required for Fencing/Painting feature', 'error');
+                document.getElementById('fencingPaintingSection').style.display = 'none';
+                return;
+            }
+            
+            // Initialize event handlers
+            initializeFencingPaintingHandlers();
+        });
+        
+        // Initialize event handlers for the Fencing/Painting section
+        function initializeFencingPaintingHandlers() {
+            // Handle "Other" option for Sales Reps
+            document.getElementById('fenceSalesRep').addEventListener('change', function() {
+                const otherInput = document.getElementById('fenceSalesRepOther');
+                otherInput.style.display = this.value === 'other' ? 'block' : 'none';
+            });
+            
+            document.getElementById('paintSalesRep').addEventListener('change', function() {
+                const otherInput = document.getElementById('paintSalesRepOther');
+                otherInput.style.display = this.value === 'other' ? 'block' : 'none';
+            });
+            
+            // Initialize date fields with today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('fenceInstallDate').value = today;
+            document.getElementById('paintDate').value = today;
+            
+            // Calculate warranty expiration dates (assuming 1 year warranty)
+            calculateWarrantyDates();
+        }
+        
+        // Calculate warranty expiration dates
+        function calculateWarrantyDates() {
+            const fenceInstallDate = document.getElementById('fenceInstallDate');
+            const fenceWarrantyExpiration = document.getElementById('fenceWarrantyExpiration');
+            const paintDate = document.getElementById('paintDate');
+            const paintWarrantyExpiration = document.getElementById('paintWarrantyExpiration');
+            
+            fenceInstallDate.addEventListener('change', function() {
+                if (this.value) {
+                    const date = new Date(this.value);
+                    date.setFullYear(date.getFullYear() + 1);
+                    fenceWarrantyExpiration.value = date.toISOString().split('T')[0];
+                }
+            });
+            
+            paintDate.addEventListener('change', function() {
+                if (this.value) {
+                    const date = new Date(this.value);
+                    date.setFullYear(date.getFullYear() + 1);
+                    paintWarrantyExpiration.value = date.toISOString().split('T')[0];
+                }
+            });
+            
+            // Trigger the change event to calculate initial values
+            fenceInstallDate.dispatchEvent(new Event('change'));
+            paintDate.dispatchEvent(new Event('change'));
+        }
+        
+        // Add a note to the notes list
+        function addNote() {
+            const notesTextarea = document.getElementById('notesTextarea');
+            const notesList = document.getElementById('notesList');
+            
+            if (notesTextarea.value.trim() === '') {
+                showNotification('Please enter a note', 'error');
+                return;
+            }
+            
+            const now = new Date();
+            const dateString = now.toLocaleDateString();
+            const timeString = now.toLocaleTimeString();
+            
+            const noteDiv = document.createElement('div');
+            noteDiv.style.padding = '10px';
+            noteDiv.style.marginBottom = '10px';
+            noteDiv.style.backgroundColor = '#f8f9fa';
+            noteDiv.style.borderRadius = '5px';
+            noteDiv.style.border = '1px solid #dee2e6';
+            
+            noteDiv.innerHTML = `
+                <div style="font-weight: bold;">${dateString} ${timeString}</div>
+                <div>${notesTextarea.value}</div>
+            `;
+            
+            notesList.appendChild(noteDiv);
+            notesTextarea.value = '';
+        }
+        
+        // Upload files
+        function uploadFiles() {
+            const fileUpload = document.getElementById('fileUpload');
+            const filesList = document.getElementById('filesList');
+            
+            if (fileUpload.files.length === 0) {
+                showNotification('Please select files to upload', 'error');
+                return;
+            }
+            
+            // In a real application, you would upload the files to a server
+            // For this example, we'll just display the file names
+            for (let i = 0; i < fileUpload.files.length; i++) {
+                const file = fileUpload.files[i];
+                
+                const fileDiv = document.createElement('div');
+                fileDiv.style.padding = '10px';
+                fileDiv.style.marginBottom = '10px';
+                fileDiv.style.backgroundColor = '#f8f9fa';
+                fileDiv.style.borderRadius = '5px';
+                fileDiv.style.border = '1px solid #dee2e6';
+                fileDiv.style.display = 'flex';
+                fileDiv.style.justifyContent = 'space-between';
+                fileDiv.style.alignItems = 'center';
+                
+                // Determine file type icon
+                let fileIcon = '📄';
+                if (file.type.startsWith('image/')) {
+                    fileIcon = '🖼️';
+                } else if (file.type.startsWith('video/')) {
+                    fileIcon = '🎬';
+                } else if (file.type.startsWith('audio/')) {
+                    fileIcon = '🔊';
+                }
+                
+                fileDiv.innerHTML = `
+                    <div>
+                        <span style="margin-right: 10px;">${fileIcon}</span>
+                        <span>${file.name}</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="this.parentNode.remove()">Remove</button>
+                `;
+                
+                filesList.appendChild(fileDiv);
+            }
+            
+            // Clear the file input
+            fileUpload.value = '';
+            
+            showNotification('Files uploaded successfully', 'success');
+        }
+    </script>
 </div>
