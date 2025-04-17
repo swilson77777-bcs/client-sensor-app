@@ -1350,7 +1350,7 @@ masterDb.run = function(query, params, callback) {
   logDatabaseWrites(query, params);
   return originalRun.call(this, query, params, callback);
 };
-
+/*
 masterDb.run(`UPDATE CompanyDataKeys SET 
   keys1Valid = 0, 
   keys2Valid = 0, 
@@ -1365,26 +1365,72 @@ masterDb.run(`UPDATE CompanyDataKeys SET
     console.log('Validation fields reset to 0 for BCS331682');
   }
 });
-
-app.post('/api/validate-company', (req, res) => {
-  const { companyNumber } = req.body;
-  
-  if (!companyNumber) {
-    return res.status(400).json({ valid: false, message: 'Company Number is required' });
-  }
-
-  masterDb.get('SELECT * FROM CompanyDataKeys WHERE companyNumber = ?', [companyNumber], (err, row) => {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ valid: false, message: 'Database error', error: err.message });
+*/
+// Route to validate company number and fetch license keys
+app.post('/validate-company', (req, res) => {
+    const { companyNumber } = req.body;
+    
+    if (!companyNumber) {
+        return res.json({ valid: false, message: 'Company number is required' });
     }
     
-    if (row) {
-      res.json({ valid: true });
-    } else {
-      res.json({ valid: false, message: 'Invalid Company Number' });
-    }
-  });
+    // Log the request for debugging
+    console.log('Validating company number:', companyNumber);
+    
+    // First, get the license keys
+    masterDb.get(
+        `SELECT * FROM CompanyDataKeys WHERE companyNumber = ?`,
+        [companyNumber],
+        (err, keysRow) => {
+            if (err) {
+                console.error('Error querying CompanyDataKeys:', err.message);
+                return res.json({ valid: false, message: 'Database error: ' + err.message });
+            }
+            
+            if (!keysRow) {
+                console.log('No company found with number:', companyNumber);
+                return res.json({ valid: false, message: 'Invalid company number' });
+            }
+            
+            // Now get the company profile data
+            masterDb.get(
+                `SELECT * FROM CompanyProfile WHERE companyNumber = ?`,
+                [companyNumber],
+                (err, profileRow) => {
+                    if (err) {
+                        console.error('Error querying CompanyProfile:', err.message);
+                        return res.json({ valid: false, message: 'Database error: ' + err.message });
+                    }
+                    
+                    // Combine the data
+                    const combinedData = {
+                        ...profileRow,
+                        keys1Valid: keysRow.keys1Valid,
+                        keys2Valid: keysRow.keys2Valid,
+                        keys3Valid: keysRow.keys3Valid,
+                        keys4Valid: keysRow.keys4Valid,
+                        keys5Valid: keysRow.keys5Valid,
+                        keys6Valid: keysRow.keys6Valid
+                    };
+                    
+                    console.log('Combined company data:', combinedData);
+                    
+                    // Return all the data
+                    return res.json({
+                        valid: true,
+                        companyData: combinedData,
+                        companyNumber: companyNumber,
+                        keys1Valid: keysRow.keys1Valid,
+                        keys2Valid: keysRow.keys2Valid,
+                        keys3Valid: keysRow.keys3Valid,
+                        keys4Valid: keysRow.keys4Valid,
+                        keys5Valid: keysRow.keys5Valid,
+                        keys6Valid: keysRow.keys6Valid
+                    });
+                }
+            );
+        }
+    );
 });
 
 
@@ -1955,28 +2001,41 @@ app.post('/validate-company', (req, res) => {
         return res.json({ valid: false, message: 'Company number is required' });
     }
     
-    // Query the database for the company number and license keys
+    // Log the request for debugging
+    console.log('Validating company number:', companyNumber);
+    
+    // Query the CompanyDataKeys table using the correct column names
     masterDb.get(
         `SELECT 
-            keys1Valid, keys2Valid, keys3Valid, keys4Valid, keys5Valid, keys6Valid 
+            companyNumber, 
+            keys1Valid, 
+            keys2Valid, 
+            keys3Valid, 
+            keys4Valid, 
+            keys5Valid, 
+            keys6Valid 
         FROM 
-            MasterCompanyInfo 
+            CompanyDataKeys 
         WHERE 
             companyNumber = ?`,
         [companyNumber],
         (err, row) => {
             if (err) {
                 console.error('Error querying database:', err.message);
-                return res.json({ valid: false, message: 'Database error' });
+                return res.json({ valid: false, message: 'Database error: ' + err.message });
             }
             
             if (!row) {
+                console.log('No company found with number:', companyNumber);
                 return res.json({ valid: false, message: 'Invalid company number' });
             }
             
-            // Return the license keys
+            console.log('Found company data:', row);
+            
+            // Return the license keys with their correct column names
             return res.json({
                 valid: true,
+                companyNumber: row.companyNumber,
                 keys1Valid: row.keys1Valid || '0',
                 keys2Valid: row.keys2Valid || '0',
                 keys3Valid: row.keys3Valid || '0',
@@ -1987,7 +2046,6 @@ app.post('/validate-company', (req, res) => {
         }
     );
 });
-
 
 
 // API endpoint to get customer media

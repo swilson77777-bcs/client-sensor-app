@@ -1359,7 +1359,9 @@ function validateCompanyNumber() {
         return;
     }
     
-    // Make a request to the server to validate the company number and fetch license keys
+    console.log('Validating company number:', companyNumber);
+    
+    // Make a request to the server to validate the company number
     fetch('/validate-company', {
         method: 'POST',
         headers: {
@@ -1367,26 +1369,93 @@ function validateCompanyNumber() {
         },
         body: JSON.stringify({ companyNumber: companyNumber })
     })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json().catch(err => {
+            console.error('Error parsing JSON response:', err);
+            throw new Error('Invalid JSON response from server');
+        });
+    })
+    .then(data => {
+        console.log('Validation response data:', data);
+        
+        if (data && data.valid) {
+            try {
+                // Store company number
+                sessionStorage.setItem('companyNumber', companyNumber);
+                
+                // Store company data if available
+                if (data.companyData) {
+                    sessionStorage.setItem('companyData', JSON.stringify(data.companyData));
+                    
+                    // Store license keys from companyData
+                    sessionStorage.setItem('keys1Valid', data.companyData.keys1Valid || '0');
+                    sessionStorage.setItem('keys2Valid', data.companyData.keys2Valid || '0');
+                    sessionStorage.setItem('keys3Valid', data.companyData.keys3Valid || '0');
+                    sessionStorage.setItem('keys4Valid', data.companyData.keys4Valid || '0');
+                    sessionStorage.setItem('keys5Valid', data.companyData.keys5Valid || '0');
+                    sessionStorage.setItem('keys6Valid', data.companyData.keys6Valid || '0');
+                } else {
+                    // If companyData is not available, try to use top-level keys
+                    sessionStorage.setItem('keys1Valid', data.keys1Valid || '0');
+                    sessionStorage.setItem('keys2Valid', data.keys2Valid || '0');
+                    sessionStorage.setItem('keys3Valid', data.keys3Valid || '0');
+                    sessionStorage.setItem('keys4Valid', data.keys4Valid || '0');
+                    sessionStorage.setItem('keys5Valid', data.keys5Valid || '0');
+                    sessionStorage.setItem('keys6Valid', data.keys6Valid || '0');
+                }
+                
+                // Close login modal and show success notification
+                document.getElementById('loginModal').style.display = 'none';
+                showNotification('Login successful', 'success');
+                
+                // Update UI based on license keys if the function exists
+                if (typeof updateFeatureButtonsVisibility === 'function') {
+                    updateFeatureButtonsVisibility();
+                }
+            } catch (e) {
+                console.error('Error storing data in sessionStorage:', e);
+                showNotification('Login successful, but there was an error storing user data', 'warning');
+            }
+        } else {
+            showNotification(data && data.message ? data.message : 'Invalid company number', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error during validation:', error);
+        showNotification('An error occurred. Please try again.', 'error');
+    });
+}
+
+// Add this fallback function to use your original validation method
+function fallbackValidation(companyNumber) {
+    // This should be your original validation logic
+    // If you were using a different endpoint before, use that here
+    fetch('/customer/' + companyNumber)
     .then(response => response.json())
     .then(data => {
-        if (data.valid) {
-            // Store license keys in sessionStorage for use across the application
-            sessionStorage.setItem('keys1Valid', data.keys1Valid);
-            sessionStorage.setItem('keys2Valid', data.keys2Valid);
-            sessionStorage.setItem('keys3Valid', data.keys3Valid);
-            sessionStorage.setItem('keys4Valid', data.keys4Valid);
-            sessionStorage.setItem('keys5Valid', data.keys5Valid);
-            sessionStorage.setItem('keys6Valid', data.keys6Valid);
+        if (data && data.customerNumber) {
+            // Store license keys if available
+            if (data.licenseKeys) {
+                sessionStorage.setItem('keys1Valid', data.licenseKeys.roofing || '0');
+                sessionStorage.setItem('keys2Valid', data.licenseKeys.fencing || '0');
+                sessionStorage.setItem('keys3Valid', data.licenseKeys.plumbing || '0');
+                sessionStorage.setItem('keys4Valid', data.licenseKeys.landscaping || '0');
+                sessionStorage.setItem('keys5Valid', data.licenseKeys.remodeling || '0');
+                sessionStorage.setItem('keys6Valid', data.licenseKeys.tech || '0');
+            }
             
-            // Store company number for future reference
+            // Store company number
             sessionStorage.setItem('companyNumber', companyNumber);
             
             // Close login modal and show success notification
             document.getElementById('loginModal').style.display = 'none';
             showNotification('Login successful', 'success');
             
-            // Update UI based on license keys
-            updateFeatureButtonsVisibility();
+            // Update UI based on license keys if the function exists
+            if (typeof updateFeatureButtonsVisibility === 'function') {
+                updateFeatureButtonsVisibility();
+            }
         } else {
             showNotification('Invalid company number', 'error');
         }
@@ -1526,13 +1595,88 @@ document.addEventListener('DOMContentLoaded', function() {
 function openCompanyProfile() {
     document.getElementById('companyProfileModal').style.display = 'block';
     
-    // Display company number
-    const companyNumber = sessionStorage.getItem('companyNumber') || '';
-    document.getElementById('companyNumber').value = companyNumber;
+    // Get company data from sessionStorage
+    const companyDataStr = sessionStorage.getItem('companyData');
+    console.log('Company data string from sessionStorage:', companyDataStr);
     
-    // Update active licenses display
-    updateActiveLicensesDisplay();
+    if (companyDataStr) {
+        try {
+            const companyData = JSON.parse(companyDataStr);
+            console.log('Parsed company data:', companyData);
+            
+            // Log all available field IDs in the modal for debugging
+            console.log('Available field IDs in modal:');
+            document.querySelectorAll('#companyProfileModal input, #companyProfileModal select').forEach(el => {
+                console.log(el.id);
+            });
+            
+            // Populate fields with a more robust approach
+            const fieldMappings = {
+                // Map database fields to form field IDs
+                'companyName': ['companyName'],
+                'companyNumber': ['companyNumber'],
+                'companyAddress': ['streetAddress', 'companyAddress'],
+                'companyCity': ['city', 'companyCity'],
+                'companyState': ['state', 'companyState'],
+                'CompanyZipCode': ['zipCode', 'companyZipCode'],
+                'companyFirstName': ['firstName', 'companyFirstName'],
+                'companyLastName': ['lastName', 'companyLastName'],
+                'companyPhoneNumber': ['phoneNumber', 'companyPhoneNumber'],
+                'companyEmail': ['email', 'companyEmail']
+            };
+            
+            // Try to populate each field using multiple possible IDs
+            for (const [dataField, fieldIds] of Object.entries(fieldMappings)) {
+                const value = companyData[dataField] || '';
+                console.log(`Trying to populate ${dataField} with value: ${value}`);
+                
+                let fieldPopulated = false;
+                for (const fieldId of fieldIds) {
+                    const element = document.getElementById(fieldId);
+                    if (element) {
+                        if (element.tagName === 'SELECT') {
+                            // Handle select elements
+                            for (let i = 0; i < element.options.length; i++) {
+                                if (element.options[i].value === value) {
+                                    element.selectedIndex = i;
+                                    fieldPopulated = true;
+                                    console.log(`Populated select field ${fieldId} with value ${value}`);
+                                    break;
+                                }
+                            }
+                        } else {
+                            // Handle input elements
+                            element.value = value;
+                            fieldPopulated = true;
+                            console.log(`Populated input field ${fieldId} with value ${value}`);
+                        }
+                        break;
+                    }
+                }
+                
+                if (!fieldPopulated) {
+                    console.warn(`Could not find any field to populate with ${dataField}`);
+                }
+            }
+            
+            // Update active licenses display
+            updateActiveLicensesDisplay();
+        } catch (error) {
+            console.error('Error parsing or using company data:', error);
+        }
+    } else {
+        console.warn('No company data found in sessionStorage');
+    }
 }
+
+function debugSessionStorage() {
+    console.log('Current sessionStorage contents:');
+    for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        console.log(`${key}: ${sessionStorage.getItem(key)}`);
+    }
+}
+
 
 function updateActiveLicensesDisplay() {
     const activeKeysList = document.getElementById('activeKeysList');
