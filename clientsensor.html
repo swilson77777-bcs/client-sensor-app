@@ -4387,17 +4387,50 @@ function updateActiveLicenses() {
 }
 
 function checkSectionAccess(sectionCode) {
-    const companyNumber = document.getElementById('companyNumber').value;
+    console.log('Checking access for section:', sectionCode);
+    
+    // Get company number - try multiple sources to ensure we find it
+    let companyNumber = sessionStorage.getItem('companyNumber');
+    
+    // If not in sessionStorage, try to get it from the form field
+    if (!companyNumber) {
+        const companyNumberField = document.getElementById('companyNumber');
+        if (companyNumberField) {
+            companyNumber = companyNumberField.value;
+        }
+    }
+    
+    // If still no company number, try companyNumberInput (login field)
+    if (!companyNumber) {
+        const companyNumberInput = document.getElementById('companyNumberInput');
+        if (companyNumberInput) {
+            companyNumber = companyNumberInput.value;
+        }
+    }
+    
+    console.log('Company number found:', companyNumber);
     
     if (!companyNumber) {
-        showNotification('Please enter a company number', 'error');
+        showNotification('Please enter your company number', 'error');
         return;
     }
     
+    // Special case for Fencing/Painting
+    if (sectionCode === 'FP') {
+        const keys2Valid = sessionStorage.getItem('keys2Valid') === '1';
+        if (keys2Valid) {
+            showFencingPaintingSection();
+        } else {
+            showNotification('License required for Fencing/Painting feature', 'error');
+            showSubscriptionMessage();
+        }
+        return;
+    }
+    
+    // For all other sections, use the original API approach
     // Map section codes to feature types
     const sectionFeatureMap = {
         'RGA': 'roof-gutter-attic',
-        'FP': 'fencing-painting',
         'PH': 'plumbing-handyman',
         'LP': 'landscaping-pool',
         'REM': 'remodeling',
@@ -4420,8 +4453,6 @@ function checkSectionAccess(sectionCode) {
                 sessionStorage.setItem(`keysValid_${sectionCode}`, '1');
                 if (sectionCode === 'RGA') {
                     showRoofGuttersAtticSection();
-                } else if (sectionCode === 'FP') {
-                    showFencingPaintingSection();
                 } else if (sectionCode === 'PH') {
                     showPlumbingHandymanSection();
                 } else if (sectionCode === 'LP') {
@@ -4517,25 +4548,58 @@ function updateFeatureButtonsVisibility() {
 }
 
 function showFencingPaintingSection() {
+    console.log('Showing Fencing/Painting section');
+    
     // Check if the user has the Fencing/Painting license
     if (sessionStorage.getItem('keys2Valid') !== '1') {
         showNotification('License required for Fencing/Painting feature', 'error');
         return;
     }
 
-    // Hide all other main sections/containers
-    // Add IDs of other main sections as needed
+    // Hide all other sections, specifically including Roof/Gutters/Attic
     const sectionIdsToHide = [
         'roofGuttersAtticSection',
         'plumbingHandymanSection',
         'landscapePoolSection',
         'remodelingSection',
         'techAudioSection'
-        // Add more section IDs here if necessary
     ];
-    sectionIdsToHide.forEach(id => {
+    
+    // Add any other section IDs that might be in your HTML
+    const additionalSectionsToHide = [
+        'roofSection', 
+        'gutterSection', 
+        'atticSection',
+        'roofingSection',
+        'guttersSection',
+        'roofGutterAtticSection'
+    ];
+    
+    // Combine all sections to hide
+    const allSectionsToHide = [...sectionIdsToHide, ...additionalSectionsToHide];
+    
+    // Hide all these sections
+    allSectionsToHide.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
+        if (el) {
+            console.log(`Hiding section: ${id}`);
+            el.style.display = 'none';
+        }
+    });
+    
+    // Also hide any elements with class names that might indicate sections
+    const sectionClasses = [
+        'roof-section', 
+        'gutter-section', 
+        'attic-section',
+        'section-container'
+    ];
+    
+    sectionClasses.forEach(className => {
+        const elements = document.getElementsByClassName(className);
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].style.display = 'none';
+        }
     });
 
     // Check if the fencingPaintingSection is already loaded
@@ -4555,12 +4619,21 @@ function showFencingPaintingSection() {
         }
 
         // Load the HTML content from the external file
-        fetch('fencePaintingSection.html')
-            .then(response => response.text())
+        console.log('Attempting to fetch fencePaintingSection.html');
+        fetch('/fencePaintingSection.html')
+            .then(response => {
+                console.log('Fetch response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
             .then(html => {
+                console.log('Successfully loaded HTML content');
                 fencingSection.innerHTML = html;
                 fencingSection.style.display = 'block';
-                // Optionally, initialize JS in the loaded section
+                
+                // Initialize any necessary components
                 if (typeof initializeFencingPaintingSection === 'function') {
                     initializeFencingPaintingSection();
                 }
