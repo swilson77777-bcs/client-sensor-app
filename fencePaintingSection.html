@@ -191,194 +191,288 @@
         </div>
     </div>
     
-    <!-- Referral Information -->
-    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin-top: 20px;">
-        <h3 style="margin-top: 0; border-bottom: 4px solid #000;"><strong>Referral Information</strong></h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div class="form-group">
-                <label for="referralFirstName">First Name:</label>
-                <input type="text" id="referralFirstName" class="wide-input">
-            </div>
-            <div class="form-group">
-                <label for="referralLastName">Last Name:</label>
-                <input type="text" id="referralLastName" class="wide-input">
-            </div>
-            <div class="form-group">
-                <label for="referralPhone">Phone:</label>
-                <input type="tel" id="referralPhone" class="wide-input" placeholder="(xxx) xxx-xxxx">
-            </div>
-            <div class="form-group">
-                <label for="referralEmail">Email:</label>
-                <input type="email" id="referralEmail" class="wide-input">
-            </div>
-        </div>
+    <!-- Referral Section -->
+  <div style="background-color: #f0f8ff; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ddd;">
+    <h3 style="margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Referral</h3>
+    
+    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+      <div style="width: 48%;">
+        <label for="fpReferralFirstName">First Name:</label>
+        <input type="text" id="fpReferralFirstName" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+      <div style="width: 48%;">
+        <label for="fpReferralLastName">Last Name:</label>
+        <input type="text" id="fpReferralLastName" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
     </div>
     
-    <!-- Notes Section -->
-    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin-top: 20px;">
-        <h3 style="margin-top: 0; border-bottom: 4px solid #000;"><strong>Notes</strong></h3>
-        <div class="form-group">
-            <textarea id="notesTextarea" rows="4" style="width: 100%; margin-bottom: 10px;"></textarea>
-            <button type="button" class="btn btn-primary" onclick="addNote()">Add Note</button>
-        </div>
-        <div id="notesList" style="margin-top: 10px;"></div>
+    <div style="display: flex; justify-content: space-between;">
+      <div style="width: 48%;">
+        <label for="fpReferralPhone">Phone:</label>
+        <input type="text" id="fpReferralPhone" placeholder="(xxx) xxx-xxxx" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+      <div style="width: 48%;">
+        <label for="fpReferralEmail">Email:</label>
+        <input type="email" id="fpReferralEmail" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+    </div>
+  </div>
+  
+  <!-- Notes Section -->
+  <div style="margin-bottom: 20px;">
+    <div style="margin-bottom: 10px;">
+      <label for="fpNotes">Notes:</label>
+      <textarea id="fpNotes" placeholder="Enter notes here..." style="width: 100%; height: 100px; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;"></textarea>
+      <div style="display: flex; justify-content: flex-end; margin-top: 5px;">
+        <button id="fpAddNote" style="padding: 5px 10px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px;">Add Note</button>
+      </div>
     </div>
     
-    <!-- Documents/Images/Videos Section -->
-    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin-top: 20px;">
-        <h3 style="margin-top: 0; border-bottom: 4px solid #000;"><strong>Documents/Images/Videos</strong></h3>
-        <div class="form-group">
-            <input type="file" id="fileUpload" multiple>
-            <button type="button" class="btn btn-primary" style="margin-top: 10px;" onclick="uploadFiles()">Upload Files</button>
-        </div>
-        <div id="filesList" style="margin-top: 10px;"></div>
+    <div>
+      <p>Previous Notes:</p>
+      <div id="fpPreviousNotes" style="background-color: #ffebee; padding: 10px; border-radius: 4px; min-height: 40px; margin-bottom: 10px;"></div>
+      
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button id="fpSubmit" style="padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Submit</button>
+        <button id="fpNewRecord" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">New Record</button>
+      </div>
     </div>
+  </div>
+  
+  <!-- Documents/Images/Videos Section -->
+  <div style="background-color: #f0f8ff; padding: 20px; border-radius: 10px; border: 1px solid #ddd;">
+    <h3 style="margin-top: 0; margin-bottom: 15px;">Documents/Images/Videos</h3>
+    
+    <div>
+      <button id="fpUpload" style="padding: 8px 20px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px;">Upload</button>
+      <button id="fpViewDownload" style="padding: 8px 20px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px;">View/Download</button>
+    </div>
+  </div>
+</div>
     
     <script>
-        // Initialize the Fencing/Painting section
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if the user has the required license
-            if (sessionStorage.getItem('keys2Valid') !== '1') {
-                // If not, show a notification and hide the section
-                showNotification('License required for Fencing/Painting feature', 'error');
-                document.getElementById('fencingPaintingSection').style.display = 'none';
-                return;
-            }
-            
-            // Initialize event handlers
+    // Initialize the Fencing/Painting section
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if the user has the required license
+        if (sessionStorage.getItem('keys2Valid') !== '1') {
+            // If not, show a notification and hide the section
+            showNotification('License required for Fencing/Painting feature', 'error');
+            document.getElementById('fencingPaintingSection').style.display = 'none';
+            return;
+        }
+        
+        // Set up event listeners for the new UI elements
+        setupFencingPaintingUI();
+        
+        // Initialize the original event handlers if they're still needed
+        if (document.getElementById('fenceSalesRep')) {
             initializeFencingPaintingHandlers();
+        }
+    });
+    
+    // Set up the new UI elements
+    function setupFencingPaintingUI() {
+        // Submit button functionality
+        const submitBtn = document.getElementById('fpSubmit');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function() {
+                // Get all the referral information
+                const firstName = document.getElementById('fpReferralFirstName').value;
+                const lastName = document.getElementById('fpReferralLastName').value;
+                const phone = document.getElementById('fpReferralPhone').value;
+                const email = document.getElementById('fpReferralEmail').value;
+                
+                // Validate the data
+                if (!firstName || !lastName) {
+                    showNotification('Please enter first and last name', 'error');
+                    return;
+                }
+                
+                // In a real application, you would send this data to the server
+                console.log('Submitting data:', { firstName, lastName, phone, email });
+                showNotification('Data submitted successfully', 'success');
+            });
+        }
+        
+        // New Record button functionality
+        const newRecordBtn = document.getElementById('fpNewRecord');
+        if (newRecordBtn) {
+            newRecordBtn.addEventListener('click', function() {
+                // Clear all form fields
+                const formFields = [
+                    'fpReferralFirstName', 
+                    'fpReferralLastName', 
+                    'fpReferralPhone', 
+                    'fpReferralEmail', 
+                    'notesTextarea'
+                ];
+                
+                formFields.forEach(id => {
+                    const field = document.getElementById(id);
+                    if (field) field.value = '';
+                });
+                
+                // Clear the notes list
+                const notesList = document.getElementById('notesList');
+                if (notesList) notesList.innerHTML = '';
+                
+                showNotification('Form cleared for new record', 'success');
+            });
+        }
+        
+        // View/Download button functionality
+        const viewDownloadBtn = document.getElementById('fpViewDownload');
+        if (viewDownloadBtn) {
+            viewDownloadBtn.addEventListener('click', function() {
+                // In a real application, this would show a list of uploaded files
+                if (document.getElementById('filesList').children.length === 0) {
+                    showNotification('No files have been uploaded yet', 'info');
+                } else {
+                    showNotification('Viewing uploaded files', 'success');
+                }
+            });
+        }
+        
+        // Set up file upload
+        const fileUpload = document.getElementById('fileUpload');
+        if (fileUpload) {
+            fileUpload.addEventListener('change', function() {
+                uploadFiles();
+            });
+        }
+    }
+    
+    // Initialize event handlers for the Fencing/Painting section
+    function initializeFencingPaintingHandlers() {
+        // Handle "Other" option for Sales Reps
+        document.getElementById('fenceSalesRep').addEventListener('change', function() {
+            const otherInput = document.getElementById('fenceSalesRepOther');
+            otherInput.style.display = this.value === 'other' ? 'block' : 'none';
         });
         
-        // Initialize event handlers for the Fencing/Painting section
-        function initializeFencingPaintingHandlers() {
-            // Handle "Other" option for Sales Reps
-            document.getElementById('fenceSalesRep').addEventListener('change', function() {
-                const otherInput = document.getElementById('fenceSalesRepOther');
-                otherInput.style.display = this.value === 'other' ? 'block' : 'none';
-            });
-            
-            document.getElementById('paintSalesRep').addEventListener('change', function() {
-                const otherInput = document.getElementById('paintSalesRepOther');
-                otherInput.style.display = this.value === 'other' ? 'block' : 'none';
-            });
-            
-            // Initialize date fields with today's date
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('fenceInstallDate').value = today;
-            document.getElementById('paintDate').value = today;
-            
-            // Calculate warranty expiration dates (assuming 1 year warranty)
-            calculateWarrantyDates();
+        document.getElementById('paintSalesRep').addEventListener('change', function() {
+            const otherInput = document.getElementById('paintSalesRepOther');
+            otherInput.style.display = this.value === 'other' ? 'block' : 'none';
+        });
+        
+        // Initialize date fields with today's date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('fenceInstallDate').value = today;
+        document.getElementById('paintDate').value = today;
+        
+        // Calculate warranty expiration dates (assuming 1 year warranty)
+        calculateWarrantyDates();
+    }
+    
+    // Calculate warranty expiration dates
+    function calculateWarrantyDates() {
+        const fenceInstallDate = document.getElementById('fenceInstallDate');
+        const fenceWarrantyExpiration = document.getElementById('fenceWarrantyExpiration');
+        const paintDate = document.getElementById('paintDate');
+        const paintWarrantyExpiration = document.getElementById('paintWarrantyExpiration');
+        
+        fenceInstallDate.addEventListener('change', function() {
+            if (this.value) {
+                const date = new Date(this.value);
+                date.setFullYear(date.getFullYear() + 1);
+                fenceWarrantyExpiration.value = date.toISOString().split('T')[0];
+            }
+        });
+        
+        paintDate.addEventListener('change', function() {
+            if (this.value) {
+                const date = new Date(this.value);
+                date.setFullYear(date.getFullYear() + 1);
+                paintWarrantyExpiration.value = date.toISOString().split('T')[0];
+            }
+        });
+        
+        // Trigger the change event to calculate initial values
+        fenceInstallDate.dispatchEvent(new Event('change'));
+        paintDate.dispatchEvent(new Event('change'));
+    }
+    
+    // Add a note to the notes list
+    function addNote() {
+        const notesTextarea = document.getElementById('notesTextarea');
+        const notesList = document.getElementById('notesList');
+        
+        if (notesTextarea.value.trim() === '') {
+            showNotification('Please enter a note', 'error');
+            return;
         }
         
-        // Calculate warranty expiration dates
-        function calculateWarrantyDates() {
-            const fenceInstallDate = document.getElementById('fenceInstallDate');
-            const fenceWarrantyExpiration = document.getElementById('fenceWarrantyExpiration');
-            const paintDate = document.getElementById('paintDate');
-            const paintWarrantyExpiration = document.getElementById('paintWarrantyExpiration');
-            
-            fenceInstallDate.addEventListener('change', function() {
-                if (this.value) {
-                    const date = new Date(this.value);
-                    date.setFullYear(date.getFullYear() + 1);
-                    fenceWarrantyExpiration.value = date.toISOString().split('T')[0];
-                }
-            });
-            
-            paintDate.addEventListener('change', function() {
-                if (this.value) {
-                    const date = new Date(this.value);
-                    date.setFullYear(date.getFullYear() + 1);
-                    paintWarrantyExpiration.value = date.toISOString().split('T')[0];
-                }
-            });
-            
-            // Trigger the change event to calculate initial values
-            fenceInstallDate.dispatchEvent(new Event('change'));
-            paintDate.dispatchEvent(new Event('change'));
+        const now = new Date();
+        const dateString = now.toLocaleDateString();
+        const timeString = now.toLocaleTimeString();
+        
+        const noteDiv = document.createElement('div');
+        noteDiv.style.padding = '10px';
+        noteDiv.style.marginBottom = '10px';
+        noteDiv.style.backgroundColor = '#f8f9fa';
+        noteDiv.style.borderRadius = '5px';
+        noteDiv.style.border = '1px solid #dee2e6';
+        
+        noteDiv.innerHTML = `
+            <div style="font-weight: bold;">${dateString} ${timeString}</div>
+            <div>${notesTextarea.value}</div>
+        `;
+        
+        notesList.appendChild(noteDiv);
+        notesTextarea.value = '';
+    }
+    
+    // Upload files
+    function uploadFiles() {
+        const fileUpload = document.getElementById('fileUpload');
+        const filesList = document.getElementById('filesList');
+        
+        if (fileUpload.files.length === 0) {
+            showNotification('Please select files to upload', 'error');
+            return;
         }
         
-        // Add a note to the notes list
-        function addNote() {
-            const notesTextarea = document.getElementById('notesTextarea');
-            const notesList = document.getElementById('notesList');
+        // In a real application, you would upload the files to a server
+        // For this example, we'll just display the file names
+        for (let i = 0; i < fileUpload.files.length; i++) {
+            const file = fileUpload.files[i];
             
-            if (notesTextarea.value.trim() === '') {
-                showNotification('Please enter a note', 'error');
-                return;
+            const fileDiv = document.createElement('div');
+            fileDiv.style.padding = '10px';
+            fileDiv.style.marginBottom = '10px';
+            fileDiv.style.backgroundColor = '#f8f9fa';
+            fileDiv.style.borderRadius = '5px';
+            fileDiv.style.border = '1px solid #dee2e6';
+            fileDiv.style.display = 'flex';
+            fileDiv.style.justifyContent = 'space-between';
+            fileDiv.style.alignItems = 'center';
+            
+            // Determine file type icon
+            let fileIcon = '📄';
+            if (file.type.startsWith('image/')) {
+                fileIcon = '🖼️';
+            } else if (file.type.startsWith('video/')) {
+                fileIcon = '🎬';
+            } else if (file.type.startsWith('audio/')) {
+                fileIcon = '🔊';
             }
             
-            const now = new Date();
-            const dateString = now.toLocaleDateString();
-            const timeString = now.toLocaleTimeString();
-            
-            const noteDiv = document.createElement('div');
-            noteDiv.style.padding = '10px';
-            noteDiv.style.marginBottom = '10px';
-            noteDiv.style.backgroundColor = '#f8f9fa';
-            noteDiv.style.borderRadius = '5px';
-            noteDiv.style.border = '1px solid #dee2e6';
-            
-            noteDiv.innerHTML = `
-                <div style="font-weight: bold;">${dateString} ${timeString}</div>
-                <div>${notesTextarea.value}</div>
+            fileDiv.innerHTML = `
+                <div>
+                    <span style="margin-right: 10px;">${fileIcon}</span>
+                    <span>${file.name}</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger" onclick="this.parentNode.remove()">Remove</button>
             `;
             
-            notesList.appendChild(noteDiv);
-            notesTextarea.value = '';
+            filesList.appendChild(fileDiv);
         }
         
-        // Upload files
-        function uploadFiles() {
-            const fileUpload = document.getElementById('fileUpload');
-            const filesList = document.getElementById('filesList');
-            
-            if (fileUpload.files.length === 0) {
-                showNotification('Please select files to upload', 'error');
-                return;
-            }
-            
-            // In a real application, you would upload the files to a server
-            // For this example, we'll just display the file names
-            for (let i = 0; i < fileUpload.files.length; i++) {
-                const file = fileUpload.files[i];
-                
-                const fileDiv = document.createElement('div');
-                fileDiv.style.padding = '10px';
-                fileDiv.style.marginBottom = '10px';
-                fileDiv.style.backgroundColor = '#f8f9fa';
-                fileDiv.style.borderRadius = '5px';
-                fileDiv.style.border = '1px solid #dee2e6';
-                fileDiv.style.display = 'flex';
-                fileDiv.style.justifyContent = 'space-between';
-                fileDiv.style.alignItems = 'center';
-                
-                // Determine file type icon
-                let fileIcon = '📄';
-                if (file.type.startsWith('image/')) {
-                    fileIcon = '🖼️';
-                } else if (file.type.startsWith('video/')) {
-                    fileIcon = '🎬';
-                } else if (file.type.startsWith('audio/')) {
-                    fileIcon = '🔊';
-                }
-                
-                fileDiv.innerHTML = `
-                    <div>
-                        <span style="margin-right: 10px;">${fileIcon}</span>
-                        <span>${file.name}</span>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="this.parentNode.remove()">Remove</button>
-                `;
-                
-                filesList.appendChild(fileDiv);
-            }
-            
-            // Clear the file input
-            fileUpload.value = '';
-            
-            showNotification('Files uploaded successfully', 'success');
-        }
-    </script>
+        // Clear the file input
+        fileUpload.value = '';
+        
+        showNotification('Files uploaded successfully', 'success');
+    }
+</script>
+
 </div>

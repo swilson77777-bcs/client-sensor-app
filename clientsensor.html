@@ -362,6 +362,11 @@
         max-width: 120px;
         margin-bottom: 0.5rem;
     }
+
+    .content-section {
+    display: none; /* Hide all sections by default */
+}
+
 </style>
 
 
@@ -4451,8 +4456,15 @@ function checkSectionAccess(sectionCode) {
             if (data.success && data.hasAccess) {
                 // Company has access, show the section
                 sessionStorage.setItem(`keysValid_${sectionCode}`, '1');
+                
+                // First hide all sections for consistency
+                hideAllContentSections();
+                
+                // Then show the requested section
                 if (sectionCode === 'RGA') {
                     showRoofGuttersAtticSection();
+                    showHiddenFormElements();
+                    initializeOtherFields();
                 } else if (sectionCode === 'PH') {
                     showPlumbingHandymanSection();
                 } else if (sectionCode === 'LP') {
@@ -4474,8 +4486,12 @@ function checkSectionAccess(sectionCode) {
 }
 
 function showRoofGuttersAtticSection() {
+    console.log("Showing Roof/Gutters/Attic section");
+    showHiddenFormElements();
+    initializeOtherFields();
     // Hide all sections first
     hideAllSections();
+    
     
     // Show the Roof/Gutters/Attic section
     document.getElementById('roofGuttersAtticSection').style.display = 'block';
@@ -4485,6 +4501,7 @@ function showRoofGuttersAtticSection() {
     
     // Scroll to the section
     document.getElementById('roofGuttersAtticSection').scrollIntoView({ behavior: 'smooth' });
+    showHiddenFormElements();
 }
 
 function hideAllSections() {
@@ -4547,105 +4564,112 @@ function updateFeatureButtonsVisibility() {
     // ...
 }
 
+
 function showFencingPaintingSection() {
-    console.log('Showing Fencing/Painting section');
-    
-    // Check if the user has the Fencing/Painting license
-    if (sessionStorage.getItem('keys2Valid') !== '1') {
-        showNotification('License required for Fencing/Painting feature', 'error');
-        return;
+  console.log('Showing Fencing/Painting section');
+  
+  // Check if the user has the Fencing/Painting license
+  if (sessionStorage.getItem('keys2Valid') !== '1') {
+    showNotification('License required for Fencing/Painting feature', 'error');
+    return;
+  }
+
+  // MODIFIED: Instead of hiding the R/G/A section, just move it off-screen
+  // This preserves all its internal elements and their state
+  try {
+    const roofSection = document.getElementById('roofGuttersAtticSection');
+    if (roofSection) {
+      // Save original styles for restoration
+      if (!roofSection.dataset.originalDisplay) {
+        roofSection.dataset.originalDisplay = roofSection.style.display || '';
+        roofSection.dataset.originalVisibility = roofSection.style.visibility || '';
+        roofSection.dataset.originalPosition = roofSection.style.position || '';
+      }
+      
+      // Move off-screen instead of hiding
+      roofSection.style.position = 'absolute';
+      roofSection.style.left = '-9999px';
+      roofSection.style.visibility = 'hidden';
+      // Do NOT set display:none as it destroys form controls
     }
+  } catch (e) {
+    console.error('Error hiding roofGuttersAtticSection:', e);
+  }
 
-    // Hide all other sections, specifically including Roof/Gutters/Attic
-    const sectionIdsToHide = [
-        'roofGuttersAtticSection',
-        'plumbingHandymanSection',
-        'landscapePoolSection',
-        'remodelingSection',
-        'techAudioSection'
-    ];
-    
-    // Add any other section IDs that might be in your HTML
-    const additionalSectionsToHide = [
-        'roofSection', 
-        'gutterSection', 
-        'atticSection',
-        'roofingSection',
-        'guttersSection',
-        'roofGutterAtticSection'
-    ];
-    
-    // Combine all sections to hide
-    const allSectionsToHide = [...sectionIdsToHide, ...additionalSectionsToHide];
-    
-    // Hide all these sections
-    allSectionsToHide.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            console.log(`Hiding section: ${id}`);
-            el.style.display = 'none';
-        }
+  // Your existing working code
+  fetch('/fencePaintingSection.html')
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.text();
+    })
+    .then(html => {
+      const container = document.getElementById('sectionContainer');
+      if (!container) throw new Error('sectionContainer not found');
+      container.innerHTML = html;
+    })
+    .catch(error => {
+      console.error('Error loading Fencing/Painting section:', error);
+      showNotification('Could not load Fencing/Painting section', 'error');
     });
-    
-    // Also hide any elements with class names that might indicate sections
-    const sectionClasses = [
-        'roof-section', 
-        'gutter-section', 
-        'attic-section',
-        'section-container'
-    ];
-    
-    sectionClasses.forEach(className => {
-        const elements = document.getElementsByClassName(className);
-        for (let i = 0; i < elements.length; i++) {
-            elements[i].style.display = 'none';
-        }
-    });
+}
 
-    // Check if the fencingPaintingSection is already loaded
-    let fencingSection = document.getElementById('fencingPaintingSection');
-    if (!fencingSection) {
-        // Create a container for the section
-        fencingSection = document.createElement('div');
-        fencingSection.id = 'fencingPaintingSection';
-
-        // Find the Fencing/Painting button and insert the section after it
-        const fencingBtn = document.getElementById('fencingPaintingBtn');
-        if (fencingBtn && fencingBtn.parentNode) {
-            fencingBtn.parentNode.insertBefore(fencingSection, fencingBtn.nextSibling);
-        } else {
-            // Fallback: append to body
-            document.body.appendChild(fencingSection);
-        }
-
-        // Load the HTML content from the external file
-        console.log('Attempting to fetch fencePaintingSection.html');
-        fetch('/fencePaintingSection.html')
-            .then(response => {
-                console.log('Fetch response status:', response.status);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.text();
-            })
-            .then(html => {
-                console.log('Successfully loaded HTML content');
-                fencingSection.innerHTML = html;
-                fencingSection.style.display = 'block';
-                
-                // Initialize any necessary components
-                if (typeof initializeFencingPaintingSection === 'function') {
-                    initializeFencingPaintingSection();
-                }
-            })
-            .catch(error => {
-                console.error('Error loading Fencing/Painting section:', error);
-                showNotification('Failed to load Fencing/Painting section', 'error');
-            });
-    } else {
-        // Section already loaded, just show it
-        fencingSection.style.display = 'block';
+function initializeOtherFields() {
+  console.log("Initializing Other fields");
+  
+  // First, hide all input fields that have "Other" in their ID
+  document.querySelectorAll('input[id*="Other"]').forEach(input => {
+    console.log("Setting display:none for", input.id);
+    input.style.display = 'none';
+  });
+  
+  // Set up event listeners for all dropdowns that might have an "other" option
+  document.querySelectorAll('select').forEach(select => {
+    // Only process selects that might have corresponding "Other" fields
+    if (select.id && (select.id.includes('SalesRep') || select.id.includes('Type') || 
+        select.id.includes('Material') || select.id.includes('Brand'))) {
+      
+      console.log("Setting up change listener for", select.id);
+      
+      // Find the corresponding "Other" input field
+      const otherInputId = select.id + 'Other';
+      const otherInput = document.getElementById(otherInputId);
+      
+      if (otherInput) {
+        // Set up change event listener
+        select.addEventListener('change', function() {
+          console.log(select.id, "changed to", this.value);
+          // Show "Other" field only when "other" is selected
+          otherInput.style.display = (this.value.toLowerCase() === 'other') ? 'block' : 'none';
+        });
+        
+        // Trigger the change event to set initial state
+        select.dispatchEvent(new Event('change'));
+      }
     }
+  });
+}
+
+
+function showHiddenFormElements() {
+  console.log("Showing hidden form elements");
+  
+  // Find all select elements with display:none
+  document.querySelectorAll('select[style*="display: none"]').forEach(select => {
+    // Skip "Other" input fields, which should be handled separately
+    if (!select.id.includes('Other')) {
+      console.log("Unhiding", select.id);
+      select.style.display = '';
+    }
+  });
+  
+  // Find all input elements with display:none
+  document.querySelectorAll('input[style*="display: none"]').forEach(input => {
+    // Skip "Other" input fields, which should be handled separately
+    if (!input.id.includes('Other')) {
+      console.log("Unhiding", input.id);
+      input.style.display = '';
+    }
+  });
 }
 
 
@@ -4659,6 +4683,42 @@ function showLicenseRequiredNotification(featureName) {
 }
 
 function showFencingPaintingSection() {
+  console.log("Attempting to show Fencing/Painting section");
+  
+  // AGGRESSIVE APPROACH: Find and hide ALL possible R/G/A related elements
+  // Using multiple selectors and approaches
+  try {
+    // Method 1: Direct ID
+    const rgaSection = document.getElementById('roofGuttersAtticSection');
+    if (rgaSection) {
+      console.log('Found and hiding roofGuttersAtticSection by ID');
+      rgaSection.style.display = 'none';
+    }
+    
+    // Method 2: Query for any divs containing roof/gutter/attic in their ID
+    const rgaElements = document.querySelectorAll('div[id*="roof"], div[id*="gutter"], div[id*="attic"]');
+    console.log(`Found ${rgaElements.length} elements with roof/gutter/attic in ID`);
+    rgaElements.forEach(el => {
+      console.log(`Hiding element: ${el.id || el.tagName}`);
+      el.style.display = 'none';
+    });
+    
+    // Method 3: Look for specific container that might hold R/G/A content
+    const sectionContainer = document.getElementById('sectionContainer');
+    if (sectionContainer) {
+      // Clear any existing R/G/A content from the container
+      const rgaContent = sectionContainer.querySelector('[id*="roof"], [id*="gutter"], [id*="attic"]');
+      if (rgaContent) {
+        console.log('Found R/G/A content in sectionContainer, removing');
+        rgaContent.style.display = 'none';
+      }
+    }
+  } catch (e) {
+    console.error('Error while trying to hide R/G/A sections:', e);
+    // Continue execution even if there's an error
+  }
+
+  // Your existing working code to load Fencing/Painting
   fetch('/fencePaintingSection.html')
     .then(response => {
       if (!response.ok) throw new Error('Network response was not ok');
@@ -4667,15 +4727,60 @@ function showFencingPaintingSection() {
     .then(html => {
       const container = document.getElementById('sectionContainer');
       if (!container) throw new Error('sectionContainer not found');
+      
+      // Clear the container before adding new content
+      // This is a key step - it removes whatever was there before
+      container.innerHTML = '';
+      
+      // Now add the new content
       container.innerHTML = html;
-      // Optionally, show/hide referral and notes sections here if they are separate
-      // Or include them in the external HTML file
     })
     .catch(error => {
       console.error('Error loading Fencing/Painting section:', error);
       showNotification('Could not load Fencing/Painting section', 'error');
     });
 }
+
+function hideAllContentSections() {
+    console.log('Hiding all content sections');
+    
+    // Hide by specific IDs
+    const sectionIds = [
+        'roofGuttersAtticSection',
+        'fencingPaintingSection',
+        'plumbingHandymanSection',
+        'landscapePoolSection',
+        'remodelingSection',
+        'techAudioSection',
+        // Add any other specific section IDs
+        'roofSection',
+        'gutterSection',
+        'atticSection'
+    ];
+    
+    sectionIds.forEach(id => {
+        const section = document.getElementById(id);
+        if (section) {
+            console.log(`Hiding section by ID: ${id}`);
+            section.style.display = 'none';
+        }
+    });
+    
+    // Hide by class name
+    const contentSections = document.getElementsByClassName('content-section');
+    for (let i = 0; i < contentSections.length; i++) {
+        contentSections[i].style.display = 'none';
+    }
+    
+    // Hide any elements that might be part of the Roof/Gutters/Attic sections
+    // This is a more aggressive approach that will hide anything that might be related
+    const possibleSectionContainers = document.querySelectorAll('[id*="roof"], [id*="gutter"], [id*="attic"], [class*="roof"], [class*="gutter"], [class*="attic"]');
+    possibleSectionContainers.forEach(element => {
+        console.log(`Hiding element by partial match: ${element.id || element.className}`);
+        element.style.display = 'none';
+    });
+}
+
 
 function initializeFencingPaintingSection() {
     // This function can be used to initialize any components in the Fencing/Painting section
@@ -4693,6 +4798,12 @@ function hideOtherSections(keepVisible = []) {
     }
   });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  console.log("DOM loaded, initializing form elements");
+  showHiddenFormElements();
+  initializeOtherFields();
+});
     </script>
 
     
