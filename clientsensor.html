@@ -2944,6 +2944,69 @@ function displayCurrentRecord() {
 
     setFieldValue('mobileAccessCode', data.mobileAccessCode);
 
+    // Set the roof sales rep field
+    const roofSalesSelect = document.getElementById('roofSalesRep');
+    const roofSalesOther = document.getElementById('roofSalesRepOther');
+
+    if (data.roofSales) {
+        // Check if the value exists in the dropdown options
+        let valueExists = false;
+        for (let i = 0; i < roofSalesSelect.options.length; i++) {
+            if (roofSalesSelect.options[i].value === data.roofSales) {
+                roofSalesSelect.value = data.roofSales;
+                valueExists = true;
+                break;
+            }
+        }
+        
+        // If the value doesn't exist in the dropdown, set it to "other" and fill the other input
+        if (!valueExists) {
+            roofSalesSelect.value = 'other';
+            roofSalesOther.value = data.roofSales;
+            roofSalesOther.style.display = 'block';
+        } else {
+            roofSalesOther.style.display = 'none';
+            roofSalesOther.value = '';
+        }
+    } else {
+        // If no value, reset to default
+        roofSalesSelect.value = '';
+        roofSalesOther.style.display = 'none';
+        roofSalesOther.value = '';
+    }
+
+    // Set the gutter sales rep field
+    const gutterSalesSelect = document.getElementById('gutterSalesRep');
+    const gutterSalesOther = document.getElementById('gutterSalesRepOther');
+
+    if (data.gutterSales) {
+        // Check if the value exists in the dropdown options
+        let valueExists = false;
+        for (let i = 0; i < gutterSalesSelect.options.length; i++) {
+            if (gutterSalesSelect.options[i].value === data.gutterSales) {
+                gutterSalesSelect.value = data.gutterSales;
+                valueExists = true;
+                break;
+            }
+        }
+        
+        // If the value doesn't exist in the dropdown, set it to "other" and fill the other input
+        if (!valueExists) {
+            gutterSalesSelect.value = 'other';
+            gutterSalesOther.value = data.gutterSales;
+            gutterSalesOther.style.display = 'block';
+        } else {
+            gutterSalesOther.style.display = 'none';
+            gutterSalesOther.value = '';
+        }
+    } else {
+        // If no value, reset to default
+        gutterSalesSelect.value = '';
+        gutterSalesOther.style.display = 'none';
+        gutterSalesOther.value = '';
+    }
+
+
     // Populate roof-related fields
     setFieldValue('roofMaterial', data.roofMaterial);
     setFieldValue('manufacturer', data.manufacturer);
@@ -3109,6 +3172,9 @@ document.getElementById('clientForm').addEventListener('submit', async (e) => {
         clientType: getValue('clientType'),
         installDate: getValue('installDate'),
         bcsWarrantyExpiration: getValue('bcsWarrantyExpiration'),
+        roofSales: document.getElementById('roofSalesRep').value === 'other' 
+        ? document.getElementById('roofSalesRepOther').value 
+        : document.getElementById('roofSalesRep').value,
         // Add new gutter fields
         gutterSize: getValue('gutterSize'),
         gutterColor: getValue('gutterColor'),
@@ -3116,6 +3182,9 @@ document.getElementById('clientForm').addEventListener('submit', async (e) => {
         gutterClientType: getValue('gutterClientType'),
         gutterInstallDate: getValue('gutterInstallDate'),
         gutterWarrantyExpiration: getValue('gutterWarrantyExpiration'),
+        gutterSales: document.getElementById('gutterSalesRep').value === 'other' 
+        ? document.getElementById('gutterSalesRepOther').value 
+        : document.getElementById('gutterSalesRep').value,
         referralFirstName: getValue('referralFirstName'),
         referralLastName: getValue('referralLastName'),
         referralPhone: getValue('referralPhone'),
@@ -4804,6 +4873,15 @@ document.addEventListener('DOMContentLoaded', function() {
   showHiddenFormElements();
   initializeOtherFields();
 });
+
+document.getElementById('clientForm').addEventListener('submit', function(event) {
+  console.log('Form submitted');
+  console.log('Current roofSalesRep value:', document.getElementById('roofSalesRep').value);
+  console.log('Current roofSalesRepOther value:', document.getElementById('roofSalesRepOther').value);
+  
+  // Don't prevent default - let the form submit normally
+});
+
     </script>
 
     
