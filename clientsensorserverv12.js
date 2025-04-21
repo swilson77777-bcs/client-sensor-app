@@ -659,6 +659,10 @@ app.post('/api/client', (req, res) => {
                         paintingDate = ?,
                         paintingWarrantyExp = ?,
                         paintingSalesRep = ?,
+                        fpFirstName = ?,
+                        fpLastName = ?,
+                        fpPhoneNumber = ?,
+                        fpEmail = ?,
                         updatedAt = CURRENT_TIMESTAMP
                     WHERE rowid = ?
                 `;
@@ -723,6 +727,10 @@ app.post('/api/client', (req, res) => {
                     data.paintingDate,
                     data.paintingWarrantyExp,
                     data.paintingSalesRep,
+                    data.fpFirstName,
+                    data.fpLastName,
+                    data.fpPhoneNumber,
+                    data.fpEmail,
                     data.recordId                    
                 ];
 
@@ -781,8 +789,9 @@ app.post('/api/client', (req, res) => {
                         fenceOwnerStatus, fenceInstallDate, fenceWarrantyExp, fenceSalesRep,
                         paintingType, paintingColor, paintingBrand, paintingFinish,
                         paintingAreaPainted, paintingOwnerStatus, paintingDate,
-                        paintingWarrantyExp, paintingSalesRep
-                    ) VALUES (${Array(82).fill('?').join(', ')})
+                        paintingWarrantyExp, paintingSalesRep,
+                        fpFirstName, fpLastName, fpPhoneNumber, fpEmail
+                    ) VALUES (${Array(86).fill('?').join(', ')})
                 `;
                 
                 const params = [
@@ -867,7 +876,11 @@ app.post('/api/client', (req, res) => {
                     data.paintingOwnerStatus,
                     data.paintingDate,
                     data.paintingWarrantyExp,
-                    data.paintingSalesRep
+                    data.paintingSalesRep,
+                    data.fpFirstName,
+                    data.fpLastName,
+                    data.fpPhoneNumber,
+                    data.fpEmail
                 ];
 
                 console.log('Insert SQL:', insertSql);

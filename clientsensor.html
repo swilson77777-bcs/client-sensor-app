@@ -2900,6 +2900,8 @@ async function deleteRecord() {
 function displayCurrentRecord() {
     const data = searchResults[currentResultIndex];
     console.log('Record data:', data);
+    console.log('Fence data available:', data.fenceType !== undefined);
+    console.log('Paint data available:', data.paintingType !== undefined);
 
     // Show delete buttons when displaying a record
     document.getElementById('deleteRecordBtn').style.display = 'inline-block';
@@ -3074,7 +3076,7 @@ function displayCurrentRecord() {
         setFieldValue('fenceStyle', data.fenceStyle);
         setFieldValue('fenceOwnerStatus', data.fenceOwnerStatus);
         setFieldValue('fenceInstallDate', data.fenceInstallDate);
-        setFieldValue('fenceWarrantyExp', data.fenceWarrantyExp);
+        setFieldValue('fenceWarrantyExpiration', data.fenceWarrantyExp); // Changed from fenceWarrantyExp to fenceWarrantyExpiration
         
         // Handle fence sales rep with "other" option
         const fenceSalesSelect = document.getElementById('fenceSalesRep');
@@ -3106,19 +3108,19 @@ function displayCurrentRecord() {
             fenceSalesOther.value = '';
         }
         
-        // Populate painting fields
-        setFieldValue('paintingType', data.paintingType);
-        setFieldValue('paintingColor', data.paintingColor);
-        setFieldValue('paintingBrand', data.paintingBrand);
-        setFieldValue('paintingFinish', data.paintingFinish);
-        setFieldValue('paintingAreaPainted', data.paintingAreaPainted);
-        setFieldValue('paintingOwnerStatus', data.paintingOwnerStatus);
-        setFieldValue('paintingDate', data.paintingDate);
-        setFieldValue('paintingWarrantyExp', data.paintingWarrantyExp);
+        // Populate painting fields with corrected IDs
+        setFieldValue('paintingType', data.paintingType); // Changed from paintingType to paintType
+        setFieldValue('paintingColor', data.paintingColor); // Changed from paintingColor to paintColor
+        setFieldValue('paintingBrand', data.paintingBrand); // Changed from paintingBrand to paintBrand
+        setFieldValue('paintingFinish', data.paintingFinish); // Changed from paintingFinish to paintFinish
+        setFieldValue('paintingAreaPainted', data.paintingAreaPainted); // Changed from paintingAreaPainted to areaPainted
+        setFieldValue('paintingOwnerStatus', data.paintingOwnerStatus); // Changed from paintingOwnerStatus to paintOwnerStatus
+        setFieldValue('paintingDate', data.paintingDate); // Changed from paintingDate to paintDate
+        setFieldValue('paintingWarrantyExp', data.paintingWarrantyExp); // Changed from paintingWarrantyExp to paintWarrantyExpiration
         
         // Handle painting sales rep with "other" option
-        const paintingSalesSelect = document.getElementById('paintingSalesRep');
-        const paintingSalesOther = document.getElementById('paintingSalesRepOther');
+        const paintingSalesSelect = document.getElementById('paintingSalesRep'); // Changed from paintingSalesRep to paintingSalesRep
+        const paintingSalesOther = document.getElementById('paintingSalesRepOther'); // Changed from paintingSalesRepOther to paintingSalesRepOther
         
         if (paintingSalesSelect && paintingSalesOther && data.paintingSalesRep) {
             // Check if value exists in dropdown
@@ -3147,6 +3149,11 @@ function displayCurrentRecord() {
         }
     }
 
+    setFieldValue('fpFirstName', data.fpFirstName);
+    setFieldValue('fpLastName', data.fpLastName);
+    setFieldValue('fpPhoneNumber', data.fpPhoneNumber);
+    setFieldValue('fpEmail', data.fpEmail);
+
     // Load notes
     loadNotes(data.streetAddress);
 
@@ -3163,6 +3170,7 @@ function displayCurrentRecord() {
         recordCounterElement.textContent = `Record ${currentResultIndex + 1} of ${searchResults.length}`;
     }
 }
+
 
 function showNotification(message, type = 'info') {
     // Remove any existing notifications
@@ -4629,6 +4637,19 @@ function checkSectionAccess(sectionCode) {
         return;
     }
     
+    // Special case for Roof/Gutters/Attic - directly show this section without API check
+    // since it's a core feature that should always be accessible
+    if (sectionCode === 'RGA') {
+        // First hide all sections for consistency
+        hideAllContentSections();
+        
+        // Then show the RGA section
+        showRoofGuttersAtticSection();
+        showHiddenFormElements();
+        initializeOtherFields();
+        return;
+    }
+    
     // For all other sections, use the original API approach
     // Map section codes to feature types
     const sectionFeatureMap = {
@@ -4658,11 +4679,7 @@ function checkSectionAccess(sectionCode) {
                 hideAllContentSections();
                 
                 // Then show the requested section
-                if (sectionCode === 'RGA') {
-                    showRoofGuttersAtticSection();
-                    showHiddenFormElements();
-                    initializeOtherFields();
-                } else if (sectionCode === 'PH') {
+                if (sectionCode === 'PH') {
                     showPlumbingHandymanSection();
                 } else if (sectionCode === 'LP') {
                     showLandscapingPoolSection();
@@ -4684,11 +4701,43 @@ function checkSectionAccess(sectionCode) {
 
 function showRoofGuttersAtticSection() {
     console.log("Showing Roof/Gutters/Attic section");
+    
+    // First, restore any elements that might have been moved off-screen
+    const roofSection = document.getElementById('roofGuttersAtticSection');
+    if (roofSection) {
+        // Restore original styles if they were saved
+        if (roofSection.dataset.originalDisplay || roofSection.dataset.originalVisibility || roofSection.dataset.originalPosition) {
+            roofSection.style.display = roofSection.dataset.originalDisplay || 'block';
+            roofSection.style.visibility = roofSection.dataset.originalVisibility || 'visible';
+            roofSection.style.position = roofSection.dataset.originalPosition || 'static';
+        } else {
+            // Default display if no saved styles
+            roofSection.style.display = 'block';
+            roofSection.style.visibility = 'visible';
+            roofSection.style.position = 'static';
+        }
+    }
+    
+    // Also restore any other elements that might have been hidden
+    const rgaElements = document.querySelectorAll('div[id*="roof"], div[id*="gutter"], div[id*="attic"]');
+    rgaElements.forEach(el => {
+        if (el.id !== 'roofGuttersAtticSection') {
+            el.style.display = 'block';
+        }
+    });
+    
+    // Clear the fence/painting section
+    const container = document.getElementById('sectionContainer');
+    if (container) {
+        container.innerHTML = '';
+    }
+    
+    // Continue with your existing functionality
     showHiddenFormElements();
     initializeOtherFields();
-    // Hide all sections first
-    hideAllSections();
     
+    // Hide all sections first (except the one we're showing)
+    hideAllSections();
     
     // Show the Roof/Gutters/Attic section
     document.getElementById('roofGuttersAtticSection').style.display = 'block';
@@ -4700,7 +4749,6 @@ function showRoofGuttersAtticSection() {
     document.getElementById('roofGuttersAtticSection').scrollIntoView({ behavior: 'smooth' });
     showHiddenFormElements();
 }
-
 function hideAllSections() {
     // Hide all section containers
     const sections = [
@@ -4771,29 +4819,18 @@ function showFencingPaintingSection() {
     return;
   }
 
-  // MODIFIED: Instead of hiding the R/G/A section, just move it off-screen
-  // This preserves all its internal elements and their state
+  // Simply hide the roof section using display property
+  // This can be easily reversed by setting display back to 'block'
   try {
     const roofSection = document.getElementById('roofGuttersAtticSection');
     if (roofSection) {
-      // Save original styles for restoration
-      if (!roofSection.dataset.originalDisplay) {
-        roofSection.dataset.originalDisplay = roofSection.style.display || '';
-        roofSection.dataset.originalVisibility = roofSection.style.visibility || '';
-        roofSection.dataset.originalPosition = roofSection.style.position || '';
-      }
-      
-      // Move off-screen instead of hiding
-      roofSection.style.position = 'absolute';
-      roofSection.style.left = '-9999px';
-      roofSection.style.visibility = 'hidden';
-      // Do NOT set display:none as it destroys form controls
+      roofSection.style.display = 'none';
     }
   } catch (e) {
     console.error('Error hiding roofGuttersAtticSection:', e);
   }
 
-  // Your existing working code
+  // Fetch and load the fence/painting section
   fetch('/fencePaintingSection.html')
     .then(response => {
       if (!response.ok) throw new Error('Network response was not ok');
@@ -4808,7 +4845,7 @@ function showFencingPaintingSection() {
       console.log('Fence/Painting section loaded:');
       console.log('fenceType element:', document.getElementById('fenceType'));
       console.log('fenceSalesRep element:', document.getElementById('fenceSalesRep'));
-      console.log('paintingType element:', document.getElementById('paintingType'));
+      console.log('paintType element:', document.getElementById('paintType'));
       
       // If we have a current record loaded, populate the fence/painting fields
       if (searchResults && searchResults.length > 0 && currentResultIndex >= 0) {
@@ -4930,6 +4967,8 @@ function showFencingPaintingSection() {
     });
 }
 
+
+
 function initializeOtherFields() {
   console.log("Initializing Other fields");
   
@@ -4999,6 +5038,7 @@ function showLicenseRequiredNotification(featureName) {
     showNotification(`License required for ${featureName} feature`, 'error');
 }
 
+/*
 function showFencingPaintingSection() {
   console.log("Attempting to show Fencing/Painting section");
   
@@ -5057,6 +5097,42 @@ function showFencingPaintingSection() {
       showNotification('Could not load Fencing/Painting section', 'error');
     });
 }
+*/
+
+function showRoofGuttersAtticSection() {
+  console.log('Restoring Roof/Gutters/Attic section');
+  
+  // Restore the roof/gutters/attic section
+  const roofSection = document.getElementById('roofGuttersAtticSection');
+  if (roofSection) {
+    // Restore original styles if saved
+    if (roofSection.dataset.originalDisplay || roofSection.dataset.originalVisibility || roofSection.dataset.originalPosition) {
+      roofSection.style.display = roofSection.dataset.originalDisplay || '';
+      roofSection.style.visibility = roofSection.dataset.originalVisibility || '';
+      roofSection.style.position = roofSection.dataset.originalPosition || '';
+    } else {
+      // Default display if no saved styles
+      roofSection.style.display = 'block';
+      roofSection.style.visibility = 'visible';
+      roofSection.style.position = 'static';
+    }
+  }
+  
+  // Also restore any other elements that might have been hidden
+  const rgaElements = document.querySelectorAll('div[id*="roof"], div[id*="gutter"], div[id*="attic"]');
+  rgaElements.forEach(el => {
+    if (el.id !== 'roofGuttersAtticSection') {
+      el.style.display = 'block';
+    }
+  });
+  
+  // Clear the fence/painting section
+  const container = document.getElementById('sectionContainer');
+  if (container) {
+    container.innerHTML = '';
+  }
+}
+
 
 function hideAllContentSections() {
     console.log('Hiding all content sections');
