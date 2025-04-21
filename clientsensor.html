@@ -3063,6 +3063,90 @@ function displayCurrentRecord() {
         if (warrantyExpirationElement) warrantyExpirationElement.value = data.bcsWarrantyExpiration.split('T')[0];
     }
 
+    // Check if fence/painting section is loaded and populate its fields
+    const sectionContainer = document.getElementById('sectionContainer');
+    if (sectionContainer && sectionContainer.querySelector('#fenceType')) {
+        // Populate fence fields
+        setFieldValue('fenceType', data.fenceType);
+        setFieldValue('fenceMaterial', data.fenceMaterial);
+        setFieldValue('fenceHeight', data.fenceHeight);
+        setFieldValue('fenceColor', data.fenceColor);
+        setFieldValue('fenceStyle', data.fenceStyle);
+        setFieldValue('fenceOwnerStatus', data.fenceOwnerStatus);
+        setFieldValue('fenceInstallDate', data.fenceInstallDate);
+        setFieldValue('fenceWarrantyExp', data.fenceWarrantyExp);
+        
+        // Handle fence sales rep with "other" option
+        const fenceSalesSelect = document.getElementById('fenceSalesRep');
+        const fenceSalesOther = document.getElementById('fenceSalesRepOther');
+        
+        if (fenceSalesSelect && fenceSalesOther && data.fenceSalesRep) {
+            // Check if value exists in dropdown
+            let valueExists = false;
+            for (let i = 0; i < fenceSalesSelect.options.length; i++) {
+                if (fenceSalesSelect.options[i].value === data.fenceSalesRep) {
+                    fenceSalesSelect.value = data.fenceSalesRep;
+                    valueExists = true;
+                    break;
+                }
+            }
+            
+            // If not in dropdown, use "other"
+            if (!valueExists) {
+                fenceSalesSelect.value = 'other';
+                fenceSalesOther.value = data.fenceSalesRep;
+                fenceSalesOther.style.display = 'block';
+            } else {
+                fenceSalesOther.style.display = 'none';
+                fenceSalesOther.value = '';
+            }
+        } else if (fenceSalesSelect && fenceSalesOther) {
+            fenceSalesSelect.value = '';
+            fenceSalesOther.style.display = 'none';
+            fenceSalesOther.value = '';
+        }
+        
+        // Populate painting fields
+        setFieldValue('paintingType', data.paintingType);
+        setFieldValue('paintingColor', data.paintingColor);
+        setFieldValue('paintingBrand', data.paintingBrand);
+        setFieldValue('paintingFinish', data.paintingFinish);
+        setFieldValue('paintingAreaPainted', data.paintingAreaPainted);
+        setFieldValue('paintingOwnerStatus', data.paintingOwnerStatus);
+        setFieldValue('paintingDate', data.paintingDate);
+        setFieldValue('paintingWarrantyExp', data.paintingWarrantyExp);
+        
+        // Handle painting sales rep with "other" option
+        const paintingSalesSelect = document.getElementById('paintingSalesRep');
+        const paintingSalesOther = document.getElementById('paintingSalesRepOther');
+        
+        if (paintingSalesSelect && paintingSalesOther && data.paintingSalesRep) {
+            // Check if value exists in dropdown
+            let valueExists = false;
+            for (let i = 0; i < paintingSalesSelect.options.length; i++) {
+                if (paintingSalesSelect.options[i].value === data.paintingSalesRep) {
+                    paintingSalesSelect.value = data.paintingSalesRep;
+                    valueExists = true;
+                    break;
+                }
+            }
+            
+            // If not in dropdown, use "other"
+            if (!valueExists) {
+                paintingSalesSelect.value = 'other';
+                paintingSalesOther.value = data.paintingSalesRep;
+                paintingSalesOther.style.display = 'block';
+            } else {
+                paintingSalesOther.style.display = 'none';
+                paintingSalesOther.value = '';
+            }
+        } else if (paintingSalesSelect && paintingSalesOther) {
+            paintingSalesSelect.value = '';
+            paintingSalesOther.style.display = 'none';
+            paintingSalesOther.value = '';
+        }
+    }
+
     // Load notes
     loadNotes(data.streetAddress);
 
@@ -3121,6 +3205,15 @@ function showNotification(message, type = 'info') {
 
 document.getElementById('clientForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    console.log('Checking fence elements:');
+    console.log('fenceType element:', document.getElementById('fenceType'));
+    console.log('fenceSalesRep element:', document.getElementById('fenceSalesRep'));
+    console.log('fenceSalesRepOther element:', document.getElementById('fenceSalesRepOther'));
+    console.log('Checking painting elements:');
+    console.log('paintingType element:', document.getElementById('paintingType'));
+    console.log('paintingSalesRep element:', document.getElementById('paintingSalesRep'));
+    console.log('paintingSalesRepOther element:', document.getElementById('paintingSalesRepOther'));
     
     const username = document.getElementById('username').value;
     const recordId = document.getElementById('recordId').value;
@@ -3147,6 +3240,20 @@ document.getElementById('clientForm').addEventListener('submit', async (e) => {
         const element = document.getElementById(id);
         return element ? element.value : '';
     };
+    
+    // Safer function to get sales rep values
+    const getSalesRepValue = (repId, otherId) => {
+        const repElement = document.getElementById(repId);
+        const otherElement = document.getElementById(otherId);
+        
+        if (!repElement) return ''; // Return empty string if element doesn't exist
+        
+        if (repElement.value === 'other' && otherElement) {
+            return otherElement.value;
+        } else {
+            return repElement.value;
+        }
+    };
         
     const formData = {
         recordId: getValue('recordId'),
@@ -3161,7 +3268,8 @@ document.getElementById('clientForm').addEventListener('submit', async (e) => {
         phoneNumber: getValue('phoneNumber'),
         email: getValue('email'),
         customerurl: getValue('customerurl'),
-        mobileAppAccess: document.getElementById('mobileAppAccess').value === 'Yes' ? 1 : 0,
+        mobileAppAccess: document.getElementById('mobileAppAccess') ? 
+            (document.getElementById('mobileAppAccess').value === 'Yes' ? 1 : 0) : 0,
         mobileAccessCode: getValue('mobileAccessCode'),
         roofMaterial: getValue('roofMaterial'),
         manufacturer: getValue('manufacturer'),
@@ -3172,9 +3280,7 @@ document.getElementById('clientForm').addEventListener('submit', async (e) => {
         clientType: getValue('clientType'),
         installDate: getValue('installDate'),
         bcsWarrantyExpiration: getValue('bcsWarrantyExpiration'),
-        roofSales: document.getElementById('roofSalesRep').value === 'other' 
-        ? document.getElementById('roofSalesRepOther').value 
-        : document.getElementById('roofSalesRep').value,
+        roofSales: getSalesRepValue('roofSalesRep', 'roofSalesRepOther'),
         // Add new gutter fields
         gutterSize: getValue('gutterSize'),
         gutterColor: getValue('gutterColor'),
@@ -3182,15 +3288,38 @@ document.getElementById('clientForm').addEventListener('submit', async (e) => {
         gutterClientType: getValue('gutterClientType'),
         gutterInstallDate: getValue('gutterInstallDate'),
         gutterWarrantyExpiration: getValue('gutterWarrantyExpiration'),
-        gutterSales: document.getElementById('gutterSalesRep').value === 'other' 
-        ? document.getElementById('gutterSalesRepOther').value 
-        : document.getElementById('gutterSalesRep').value,
+        gutterSales: getSalesRepValue('gutterSalesRep', 'gutterSalesRepOther'),
         referralFirstName: getValue('referralFirstName'),
         referralLastName: getValue('referralLastName'),
         referralPhone: getValue('referralPhone'),
         referralEmail: getValue('referralEmail'),
-    
     };
+
+    // Add fence and painting data if the section is loaded
+    const sectionContainer = document.getElementById('sectionContainer');
+    if (sectionContainer && sectionContainer.querySelector('#fenceType')) {
+        // Get fence data
+        formData.fenceType = getValue('fenceType');
+        formData.fenceMaterial = getValue('fenceMaterial');
+        formData.fenceHeight = getValue('fenceHeight');
+        formData.fenceColor = getValue('fenceColor');
+        formData.fenceStyle = getValue('fenceStyle');
+        formData.fenceOwnerStatus = getValue('fenceOwnerStatus');
+        formData.fenceInstallDate = getValue('fenceInstallDate');
+        formData.fenceWarrantyExp = getValue('fenceWarrantyExp');
+        formData.fenceSalesRep = getSalesRepValue('fenceSalesRep', 'fenceSalesRepOther');
+        
+        // Get painting data
+        formData.paintingType = getValue('paintingType');
+        formData.paintingColor = getValue('paintingColor');
+        formData.paintingBrand = getValue('paintingBrand');
+        formData.paintingFinish = getValue('paintingFinish');
+        formData.paintingAreaPainted = getValue('paintingAreaPainted');
+        formData.paintingOwnerStatus = getValue('paintingOwnerStatus');
+        formData.paintingDate = getValue('paintingDate');
+        formData.paintingWarrantyExp = getValue('paintingWarrantyExp');
+        formData.paintingSalesRep = getSalesRepValue('paintingSalesRep', 'paintingSalesRepOther');
+    }
 
     console.log('Form Data:', JSON.stringify(formData, null, 2));
     console.log('Mobile App Access Value:', formData.mobileAppAccess);
@@ -3198,11 +3327,10 @@ document.getElementById('clientForm').addEventListener('submit', async (e) => {
 
     // Add device fields using direct DOM access to match the pattern above
     for (let i = 1; i <= 10; i++) {
-    formData[`deviceSku${i}`] = getValue(`deviceSku${i}`);
-    formData[`deviceName${i}`] = getValue(`deviceName${i}`);
-    formData[`deviceMac${i}`] = getValue(`deviceMac${i}`);
-}
-
+        formData[`deviceSku${i}`] = getValue(`deviceSku${i}`);
+        formData[`deviceName${i}`] = getValue(`deviceName${i}`);
+        formData[`deviceMac${i}`] = getValue(`deviceMac${i}`);
+    }
 
     try {
         const response = await fetch('/api/client', {
@@ -4675,6 +4803,126 @@ function showFencingPaintingSection() {
       const container = document.getElementById('sectionContainer');
       if (!container) throw new Error('sectionContainer not found');
       container.innerHTML = html;
+      
+      // Add this to verify elements are properly loaded
+      console.log('Fence/Painting section loaded:');
+      console.log('fenceType element:', document.getElementById('fenceType'));
+      console.log('fenceSalesRep element:', document.getElementById('fenceSalesRep'));
+      console.log('paintingType element:', document.getElementById('paintingType'));
+      
+      // If we have a current record loaded, populate the fence/painting fields
+      if (searchResults && searchResults.length > 0 && currentResultIndex >= 0) {
+        const data = searchResults[currentResultIndex];
+        
+        // Populate fence fields
+        const setFieldValue = (id, value) => {
+          const element = document.getElementById(id);
+          if (element) {
+            element.value = value || '';
+          } else {
+            console.warn(`Element with ID '${id}' not found.`);
+          }
+        };
+        
+        // Set fence fields
+        setFieldValue('fenceType', data.fenceType);
+        setFieldValue('fenceMaterial', data.fenceMaterial);
+        setFieldValue('fenceHeight', data.fenceHeight);
+        setFieldValue('fenceColor', data.fenceColor);
+        setFieldValue('fenceStyle', data.fenceStyle);
+        setFieldValue('fenceOwnerStatus', data.fenceOwnerStatus);
+        setFieldValue('fenceInstallDate', data.fenceInstallDate);
+        setFieldValue('fenceWarrantyExp', data.fenceWarrantyExp);
+        
+        // Handle fence sales rep with "other" option
+        const fenceSalesSelect = document.getElementById('fenceSalesRep');
+        const fenceSalesOther = document.getElementById('fenceSalesRepOther');
+        
+        if (fenceSalesSelect && fenceSalesOther && data.fenceSalesRep) {
+          // Check if value exists in dropdown
+          let valueExists = false;
+          for (let i = 0; i < fenceSalesSelect.options.length; i++) {
+            if (fenceSalesSelect.options[i].value === data.fenceSalesRep) {
+              fenceSalesSelect.value = data.fenceSalesRep;
+              valueExists = true;
+              break;
+            }
+          }
+          
+          // If not in dropdown, use "other"
+          if (!valueExists) {
+            fenceSalesSelect.value = 'other';
+            fenceSalesOther.value = data.fenceSalesRep;
+            fenceSalesOther.style.display = 'block';
+          } else {
+            fenceSalesOther.style.display = 'none';
+            fenceSalesOther.value = '';
+          }
+        }
+        
+        // Set painting fields
+        setFieldValue('paintingType', data.paintingType);
+        setFieldValue('paintingColor', data.paintingColor);
+        setFieldValue('paintingBrand', data.paintingBrand);
+        setFieldValue('paintingFinish', data.paintingFinish);
+        setFieldValue('paintingAreaPainted', data.paintingAreaPainted);
+        setFieldValue('paintingOwnerStatus', data.paintingOwnerStatus);
+        setFieldValue('paintingDate', data.paintingDate);
+        setFieldValue('paintingWarrantyExp', data.paintingWarrantyExp);
+        
+        // Handle painting sales rep with "other" option
+        const paintingSalesSelect = document.getElementById('paintingSalesRep');
+        const paintingSalesOther = document.getElementById('paintingSalesRepOther');
+        
+        if (paintingSalesSelect && paintingSalesOther && data.paintingSalesRep) {
+          // Check if value exists in dropdown
+          let valueExists = false;
+          for (let i = 0; i < paintingSalesSelect.options.length; i++) {
+            if (paintingSalesSelect.options[i].value === data.paintingSalesRep) {
+              paintingSalesSelect.value = data.paintingSalesRep;
+              valueExists = true;
+              break;
+            }
+          }
+          
+          // If not in dropdown, use "other"
+          if (!valueExists) {
+            paintingSalesSelect.value = 'other';
+            paintingSalesOther.value = data.paintingSalesRep;
+            paintingSalesOther.style.display = 'block';
+          } else {
+            paintingSalesOther.style.display = 'none';
+            paintingSalesOther.value = '';
+          }
+        }
+      }
+      
+      // Set up event handlers for the fence and painting sales rep dropdowns
+      const fenceSalesRep = document.getElementById('fenceSalesRep');
+      if (fenceSalesRep) {
+        fenceSalesRep.addEventListener('change', function() {
+          const otherInput = document.getElementById('fenceSalesRepOther');
+          if (this.value === 'other') {
+            otherInput.style.display = 'block';
+          } else {
+            otherInput.style.display = 'none';
+            otherInput.value = '';
+          }
+        });
+      }
+      
+      const paintingSalesRep = document.getElementById('paintingSalesRep');
+      if (paintingSalesRep) {
+        paintingSalesRep.addEventListener('change', function() {
+          const otherInput = document.getElementById('paintingSalesRepOther');
+          if (this.value === 'other') {
+            otherInput.style.display = 'block';
+          } else {
+            otherInput.style.display = 'none';
+            otherInput.value = '';
+          }
+        });
+      }
     })
     .catch(error => {
       console.error('Error loading Fencing/Painting section:', error);

@@ -641,6 +641,24 @@ app.post('/api/client', (req, res) => {
                         referralEmail = ?,
                         roofSales = ?,
                         gutterSales = ?,
+                        fenceType = ?,
+                        fenceMaterial = ?,
+                        fenceHeight = ?,
+                        fenceColor = ?,
+                        fenceStyle = ?,
+                        fenceOwnerStatus = ?,
+                        fenceInstallDate = ?,
+                        fenceWarrantyExp = ?,
+                        fenceSalesRep = ?,
+                        paintingType = ?,
+                        paintingColor = ?,
+                        paintingBrand = ?,
+                        paintingFinish = ?,
+                        paintingAreaPainted = ?,
+                        paintingOwnerStatus = ?,
+                        paintingDate = ?,
+                        paintingWarrantyExp = ?,
+                        paintingSalesRep = ?,
                         updatedAt = CURRENT_TIMESTAMP
                     WHERE rowid = ?
                 `;
@@ -687,12 +705,30 @@ app.post('/api/client', (req, res) => {
                     data.referralEmail,
                     data.roofSales,
                     data.gutterSales,
+                    data.fenceType,
+                    data.fenceMaterial,
+                    data.fenceHeight,
+                    data.fenceColor,
+                    data.fenceStyle,
+                    data.fenceOwnerStatus,
+                    data.fenceInstallDate,
+                    data.fenceWarrantyExp,
+                    data.fenceSalesRep,
+                    data.paintingType,
+                    data.paintingColor,
+                    data.paintingBrand,
+                    data.paintingFinish,
+                    data.paintingAreaPainted,
+                    data.paintingOwnerStatus,
+                    data.paintingDate,
+                    data.paintingWarrantyExp,
+                    data.paintingSalesRep,
                     data.recordId                    
                 ];
 
                 console.log('Update SQL:', updateSql);
                 console.log('Update params:', JSON.stringify(params, null, 2));
-
+                
                 db.run(updateSql, params, function(err) {
                     if (err) {
                         console.error('Update error:', err);
@@ -738,12 +774,15 @@ app.post('/api/client', (req, res) => {
                         deviceSku1, deviceSku2, deviceSku3, deviceSku4, deviceSku5,
                         deviceSku6, deviceSku7, deviceSku8, deviceSku9, deviceSku10,
                         customerNumber, customerurl, gutterSize, gutterColor, gutterBrand,
-                        gutterClientType,
-                        gutterInstallDate,
-                        gutterWarrantyExpiration,
+                        gutterClientType, gutterInstallDate, gutterWarrantyExpiration,
                         referralFirstName, referralLastName, referralPhone, referralEmail,
-                        roofSales, gutterSales
-                    ) VALUES (${Array(64).fill('?').join(', ')})
+                        roofSales, gutterSales,
+                        fenceType, fenceMaterial, fenceHeight, fenceColor, fenceStyle,
+                        fenceOwnerStatus, fenceInstallDate, fenceWarrantyExp, fenceSalesRep,
+                        paintingType, paintingColor, paintingBrand, paintingFinish,
+                        paintingAreaPainted, paintingOwnerStatus, paintingDate,
+                        paintingWarrantyExp, paintingSalesRep
+                    ) VALUES (${Array(82).fill('?').join(', ')})
                 `;
                 
                 const params = [
@@ -799,19 +838,36 @@ app.post('/api/client', (req, res) => {
                     data.deviceSku10,
                     data.customerNumber,
                     data.customerurl,
-                    // Add new gutter fields
-                   data.gutterSize,
-                   data.gutterColor,
-                   data.gutterBrand,
-                   data.gutterClientType,
-                   data.gutterInstallDate,
-                   data.gutterWarrantyExpiration,
-                   data.referralFirstName,
-                   data.referralLastName,
-                   data.referralPhone,
-                   data.referralEmail,
-                   data.roofSales,
-                   data.gutterSales
+                    data.gutterSize,
+                    data.gutterColor,
+                    data.gutterBrand,
+                    data.gutterClientType,
+                    data.gutterInstallDate,
+                    data.gutterWarrantyExpiration,
+                    data.referralFirstName,
+                    data.referralLastName,
+                    data.referralPhone,
+                    data.referralEmail,
+                    data.roofSales,
+                    data.gutterSales,
+                    data.fenceType,
+                    data.fenceMaterial,
+                    data.fenceHeight,
+                    data.fenceColor,
+                    data.fenceStyle,
+                    data.fenceOwnerStatus,
+                    data.fenceInstallDate,
+                    data.fenceWarrantyExp,
+                    data.fenceSalesRep,
+                    data.paintingType,
+                    data.paintingColor,
+                    data.paintingBrand,
+                    data.paintingFinish,
+                    data.paintingAreaPainted,
+                    data.paintingOwnerStatus,
+                    data.paintingDate,
+                    data.paintingWarrantyExp,
+                    data.paintingSalesRep
                 ];
 
                 console.log('Insert SQL:', insertSql);
