@@ -577,7 +577,15 @@ app.post('/api/client', (req, res) => {
     console.log('Received streetAddress:', req.body.streetAddress);
 
     const data = req.body;
-    
+
+    console.log('Received data:', data);
+    console.log('Referral fields:', {
+    fpFirstName: data.fpFirstName,
+    fpLastName: data.fpLastName,
+    fpPhoneNumber: data.fpPhoneNumber,
+    fpEmail: data.fpEmail
+  });    
+
     if (data.recordId) {
         console.log('Using recordId for update:', data.recordId);
         // First check if username exists in another record
@@ -658,11 +666,7 @@ app.post('/api/client', (req, res) => {
                         paintingOwnerStatus = ?,
                         paintingDate = ?,
                         paintingWarrantyExp = ?,
-                        paintingSalesRep = ?,
-                        fpFirstName = ?,
-                        fpLastName = ?,
-                        fpPhoneNumber = ?,
-                        fpEmail = ?,
+                        paintingSalesRep = ?,                        
                         updatedAt = CURRENT_TIMESTAMP
                     WHERE rowid = ?
                 `;
@@ -727,10 +731,6 @@ app.post('/api/client', (req, res) => {
                     data.paintingDate,
                     data.paintingWarrantyExp,
                     data.paintingSalesRep,
-                    data.fpFirstName,
-                    data.fpLastName,
-                    data.fpPhoneNumber,
-                    data.fpEmail,
                     data.recordId                    
                 ];
 
@@ -901,6 +901,45 @@ app.post('/api/client', (req, res) => {
         );
     }
 });
+
+// Add a new endpoint specifically for updating referral fields
+app.post('/api/update-fp-referral', (req, res) => {
+  const data = req.body;
+  console.log('Received referral data:', data);
+  
+  if (!data.recordId) {
+    return res.json({ success: false, message: 'No record ID provided' });
+  }
+  
+  // Direct SQL update for just the referral fields
+  const updateSql = `
+    UPDATE ClientProfile 
+    SET fpFirstName = ?,
+        fpLastName = ?,
+        fpPhoneNumber = ?,
+        fpEmail = ?
+    WHERE rowid = ?
+  `;
+  
+  const params = [
+    data.fpFirstName || '',
+    data.fpLastName || '',
+    data.fpPhoneNumber || '',
+    data.fpEmail || '',
+    data.recordId
+  ];
+  
+  db.run(updateSql, params, function(err) {
+    if (err) {
+      console.error('Database error:', err);
+      return res.json({ success: false, message: err.message });
+    }
+    
+    console.log(`Row ${data.recordId} updated with referral data`);
+    return res.json({ success: true, message: 'Referral data updated successfully' });
+  });
+});
+
 
 // Notes endpoints
 

@@ -380,6 +380,7 @@
   <div class="modal-content">
     <img src="bcs1.png" alt="Company Logo" class="logo">
     <h2>Enter Company Number</h2>
+    <input type="hidden" id="currentRecordData" value="">
     <p>Please enter your unique company identifier to access the system.</p>
     <input type="text" id="companyNumberInput" placeholder="Company Number" required>
     <button onclick="validateCompanyNumber()" class="submit-btn"><strong>Submit</strong></button>
@@ -401,6 +402,11 @@
         
         <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
             <div class="form-group">
+                <input type="hidden" id="hiddenFpFirstName" name="fpFirstName" value="">
+                <input type="hidden" id="hiddenFpLastName" name="fpLastName" value="">
+                <input type="hidden" id="hiddenFpPhoneNumber" name="fpPhoneNumber" value="">
+                <input type="hidden" id="hiddenFpEmail" name="fpEmail" value="">
+
                 <label for="companyName">Company Name:</label>
                 <input type="text" id="companyName" class="wide-input" value="Examp Testing Industries">
             </div>
@@ -2903,6 +2909,20 @@ function displayCurrentRecord() {
     console.log('Fence data available:', data.fenceType !== undefined);
     console.log('Paint data available:', data.paintingType !== undefined);
 
+    // Store the current record data in a hidden field for later use
+    const recordDataField = document.getElementById('currentRecordData');
+    if (recordDataField) {
+        // Store the referral fields to make them accessible to the MutationObserver
+        const referralData = {
+            fpFirstName: data.fpFirstName || '',
+            fpLastName: data.fpLastName || '',
+            fpPhoneNumber: data.fpPhoneNumber || '',
+            fpEmail: data.fpEmail || ''
+        };
+        recordDataField.value = JSON.stringify(referralData);
+        console.log('Stored referral data in hidden field:', referralData);
+    }
+
     // Show delete buttons when displaying a record
     document.getElementById('deleteRecordBtn').style.display = 'inline-block';
     document.getElementById('deleteRecordBtn2').style.display = 'inline-block';
@@ -3149,10 +3169,18 @@ function displayCurrentRecord() {
         }
     }
 
-    setFieldValue('fpFirstName', data.fpFirstName);
-    setFieldValue('fpLastName', data.fpLastName);
-    setFieldValue('fpPhoneNumber', data.fpPhoneNumber);
-    setFieldValue('fpEmail', data.fpEmail);
+    // Check if fence/painting section is visible and populate referral fields
+    if (document.getElementById('fencingPaintingSection') && 
+        document.getElementById('fencingPaintingSection').style.display !== 'none') {
+        console.log('Fence/Painting section is visible, populating referral fields directly');
+        setFieldValue('fpFirstName', data.fpFirstName);
+        setFieldValue('fpLastName', data.fpLastName);
+        setFieldValue('fpPhoneNumber', data.fpPhoneNumber);
+        setFieldValue('fpEmail', data.fpEmail);
+    } else {
+        console.log('Fence/Painting section not currently loaded, skipping referral fields');
+        // Data is already stored in the hidden field for later use
+    }
 
     // Load notes
     loadNotes(data.streetAddress);
@@ -3440,18 +3468,39 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('gutterClientType').addEventListener('change', handleGutterDropdownChange);
     });
 
-    // Mutation observer to handle dynamically added options
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'childList' && mutation.target.tagName === 'SELECT') {
-                const dropdown = mutation.target;
-                if (gutterDropdowns.includes(dropdown.id)) {
-                    dropdown.removeEventListener('change', handleGutterDropdownChange);
-                    dropdown.addEventListener('change', handleGutterDropdownChange);
-                }
+    // In your MutationObserver callback
+const recordDataField = document.getElementById('currentRecordData');
+if (recordDataField && recordDataField.value) {
+    try {
+        const data = JSON.parse(recordDataField.value);
+        
+        // Only set values if fields are empty
+        const setFieldValueIfEmpty = (id, value) => {
+            const element = document.getElementById(id);
+            if (element && (!element.value || element.value.trim() === '')) {
+                element.value = value || '';
+                console.log(`Set value for ${id}: ${value}`);
+            } else if (element) {
+                console.log(`Field ${id} already has value: ${element.value}, not overwriting`);
             }
-        });
-    });
+        };
+        
+        setFieldValueIfEmpty('fpFirstName', data.fpFirstName);
+        setFieldValueIfEmpty('fpLastName', data.fpLastName);
+        setFieldValueIfEmpty('fpPhoneNumber', data.fpPhoneNumber);
+        setFieldValueIfEmpty('fpEmail', data.fpEmail);
+        
+        // Disconnect observer after initial population to prevent further interference
+        observer.disconnect();
+        console.log('MutationObserver disconnected to prevent overwriting user input');
+    } catch (error) {
+        console.error('Error parsing record data:', error);
+    }
+}
+
+
+
+     
 
     gutterDropdowns.forEach(id => {
         const dropdown = document.getElementById(id);
@@ -5206,6 +5255,130 @@ document.getElementById('clientForm').addEventListener('submit', function(event)
   // Don't prevent default - let the form submit normally
 });
 
+// Function to populate referral fields when Fence/Painting section is loaded
+function populateReferralFieldsWhenLoaded(data) {
+    console.log('Attempting to populate referral fields with data:', data);
+    
+    // Check if data contains the referral fields
+    if (!data) {
+        console.error('No data provided to populateReferralFieldsWhenLoaded');
+        return;
+    }
+    
+    console.log('Referral data available in record:', {
+        fpFirstName: data.fpFirstName,
+        fpLastName: data.fpLastName,
+        fpPhoneNumber: data.fpPhoneNumber,
+        fpEmail: data.fpEmail
+    });
+    
+    const fencePaintingSection = document.getElementById('fencingPaintingSection');
+    if (!fencePaintingSection) {
+        console.error('Fence/Painting section not found in DOM');
+        return;
+    }
+
+    // Check if section is visible
+    if (fencePaintingSection.style.display === 'none' || fencePaintingSection.hidden) {
+        console.error('Fence/Painting section is hidden');
+        return;
+    }
+    
+    // Check if referral fields exist
+    const fpFirstNameEl = document.getElementById('fpFirstName');
+    const fpLastNameEl = document.getElementById('fpLastName');
+    const fpPhoneNumberEl = document.getElementById('fpPhoneNumber');
+    const fpEmailEl = document.getElementById('fpEmail');
+    
+    console.log('Referral field elements found:', {
+        fpFirstName: fpFirstNameEl,
+        fpLastName: fpLastNameEl,
+        fpPhoneNumber: fpPhoneNumberEl,
+        fpEmail: fpEmailEl
+    });
+    
+    if (!fpFirstNameEl || !fpLastNameEl || !fpPhoneNumberEl || !fpEmailEl) {
+        console.error('One or more referral fields not found in DOM');
+        return;
+    }
+
+    // Populate referral fields
+    try {
+        fpFirstNameEl.value = data.fpFirstName || '';
+        console.log(`Set value for fpFirstName: ${data.fpFirstName}`);
+        
+        fpLastNameEl.value = data.fpLastName || '';
+        console.log(`Set value for fpLastName: ${data.fpLastName}`);
+        
+        fpPhoneNumberEl.value = data.fpPhoneNumber || '';
+        console.log(`Set value for fpPhoneNumber: ${data.fpPhoneNumber}`);
+        
+        fpEmailEl.value = data.fpEmail || '';
+        console.log(`Set value for fpEmail: ${data.fpEmail}`);
+        
+        console.log('Successfully populated all referral fields');
+    } catch (error) {
+        console.error('Error populating referral fields:', error);
+    }
+}
+
+// MutationObserver to watch for changes in the DOM
+const observer = new MutationObserver((mutationsList, observer) => {
+    for (const mutation of mutationsList) {
+        if (mutation.type === 'childList') {
+            const fencePaintingSection = document.getElementById('fencingPaintingSection');
+            if (fencePaintingSection && fencePaintingSection.style.display !== 'none') {
+                console.log('Fence/Painting section loaded, populating referral fields');
+                
+                // Wait a short moment for all elements to be fully rendered
+                setTimeout(() => {
+                    // Get the data from the hidden field instead of searchResults
+                    const recordDataField = document.getElementById('currentRecordData');
+                    if (recordDataField && recordDataField.value) {
+                        try {
+                            const data = JSON.parse(recordDataField.value);
+                            console.log('Record data from hidden field:', data);
+                            
+                            // Populate the referral fields directly
+                            const setFieldValue = (id, value) => {
+                                const element = document.getElementById(id);
+                                if (element) {
+                                    element.value = value || '';
+                                    console.log(`Set value for ${id}: ${value}`);
+                                } else {
+                                    console.warn(`Element with ID ${id} not found`);
+                                }
+                            };
+                            
+                            setFieldValue('fpFirstName', data.fpFirstName);
+                            setFieldValue('fpLastName', data.fpLastName);
+                            setFieldValue('fpPhoneNumber', data.fpPhoneNumber);
+                            setFieldValue('fpEmail', data.fpEmail);
+                            
+                            console.log('Successfully populated referral fields from hidden field data');
+                        } catch (error) {
+                            console.error('Error parsing record data:', error);
+                        }
+                    } else {
+                        console.error('currentRecordData field not available or empty');
+                    }
+                }, 100);
+                
+                break;
+            }
+        }
+    }
+});
+
+// Start observing the body for added nodes
+observer.observe(document.body, { childList: true, subtree: true });
+
+// Start observing the body for added nodes
+observer.observe(document.body, { childList: true, subtree: true });
+
+// Start observing the body for added nodes
+observer.observe(document.body, { childList: true, subtree: true });
+
     </script>
 
     
@@ -5349,6 +5522,7 @@ document.getElementById('clientForm').addEventListener('submit', function(event)
     </div>
   </div>
 </div>
+
 
 
 

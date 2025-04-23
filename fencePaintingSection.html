@@ -5,7 +5,11 @@
         <div style="background-color: #d7ebf9; padding: 20px; border-radius: 10px; width: 45%;">
             <h3><strong>Fencing Information</strong></h3>
             <hr style="border: 2px solid #000000; width: 95%;">
-            
+            <input type="hidden" id="hiddenFpFirstName" name="fpFirstName" value="">
+            <input type="hidden" id="hiddenFpLastName" name="fpLastName" value="">
+            <input type="hidden" id="hiddenFpPhoneNumber" name="fpPhoneNumber" value="">
+            <input type="hidden" id="hiddenFpEmail" name="fpEmail" value="">
+
             <label>Fence Type:</label><br>
             <select id="fenceType">
                 <option value="">Select...</option>
@@ -192,31 +196,34 @@
     </div>
     
     <!-- Referral Section -->
-    <div style="background-color: #f0f8ff; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ddd;">
-        <h3 style="margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Referral</h3>
-        
-        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-            <div style="width: 48%;">
-                <label for="fpFirstName">First Name:</label>
-                <input type="text" id="fpFirstName" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
-            <div style="width: 48%;">
-                <label for="fpLastName">Last Name:</label>
-                <input type="text" id="fpLastName" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
+   <form id="fpForm" onsubmit="return false;">
+   <div style="background-color: #f0f8ff; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ddd;">
+    <h3 style="margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Fence/Painting Referral</h3>
+    
+    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+        <div style="width: 48%;">
+            <label for="fpFirstName">First Name:</label>
+            <input type="text" id="fpFirstName" name="fpFirstName" required style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
-        
-        <div style="display: flex; justify-content: space-between;">
-            <div style="width: 48%;">
-                <label for="fpPhoneNumber">Phone:</label>
-                <input type="text" id="fpPhoneNumber" placeholder="(xxx) xxx-xxxx" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
-            <div style="width: 48%;">
-                <label for="fpEmail">Email:</label>
-                <input type="email" id="fpEmail" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
-            </div>
+        <div style="width: 48%;">
+            <label for="fpLastName">Last Name:</label>
+            <input type="text" id="fpLastName" name="fpLastName" required style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
     </div>
+    
+    <div style="display: flex; justify-content: space-between;">
+        <div style="width: 48%;">
+            <label for="fpPhoneNumber">Phone:</label>
+            <input type="tel" id="fpPhoneNumber" name="fpPhoneNumber" placeholder="(xxx) xxx-xxxx" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+        <div style="width: 48%;">
+            <label for="fpEmail">Email:</label>
+            <input type="email" id="fpEmail" name="fpEmail" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+    </div>
+</div>
+</form>
+
     
     <!-- Notes Section -->
     <div style="margin-bottom: 20px;">
@@ -250,7 +257,17 @@
         <div id="filesList"></div>
     </div>
     
+   
+
     <script>
+
+    const inputField = document.getElementById('fpFirstName');
+    // Add event listener for input event
+inputField.addEventListener('input', function() {
+    console.log('Current fpFirstName value:', inputField.value);
+});
+
+
     // Initialize the Fencing/Painting section
     document.addEventListener('DOMContentLoaded', function() {
         // Check if the user has the required license
@@ -270,77 +287,683 @@
         }
     });
     
-    // Set up the new UI elements
     function setupFencingPaintingUI() {
-        // Submit button functionality
-        const submitBtn = document.getElementById('fpSubmit');
-        if (submitBtn) {
-            submitBtn.addEventListener('click', function() {
-                // Get all the referral information
-                const firstName = document.getElementById('fpFirstName').value;
-                const lastName = document.getElementById('fpLastName').value;
-                const phone = document.getElementById('fpPhoneNumber').value;
-                const email = document.getElementById('fpEmail').value;
-                
-                // Validate the data
-                if (!firstName || !lastName) {
-                    showNotification('Please enter first and last name', 'error');
-                    return;
-                }
-                
-                // In a real application, you would send this data to the server
-                console.log('Submitting data:', { firstName, lastName, phone, email });
-                showNotification('Data submitted successfully', 'success');
-            });
-        }
-        
-        // New Record button functionality
-        const newRecordBtn = document.getElementById('fpNewRecord');
-        if (newRecordBtn) {
-            newRecordBtn.addEventListener('click', function() {
-                // Clear all form fields
-                const formFields = [
-                    'fpFirstName', 
-                    'fpLastName', 
-                    'fpPhoneNumber', 
-                    'fpEmail', 
-                    'notesTextarea'
-                ];
-                
-                formFields.forEach(id => {
-                    const field = document.getElementById(id);
-                    if (field) field.value = '';
-                });
-                
-                // Clear the notes list
-                const notesList = document.getElementById('notesList');
-                if (notesList) notesList.innerHTML = '';
-                
-                showNotification('Form cleared for new record', 'success');
-            });
-        }
-        
-        // View/Download button functionality
-        const viewDownloadBtn = document.getElementById('fpViewDownload');
-        if (viewDownloadBtn) {
-            viewDownloadBtn.addEventListener('click', function() {
-                // In a real application, this would show a list of uploaded files
-                if (document.getElementById('filesList').children.length === 0) {
-                    showNotification('No files have been uploaded yet', 'info');
-                } else {
-                    showNotification('Viewing uploaded files', 'success');
-                }
-            });
-        }
-        
-        // Set up file upload
-        const fileUpload = document.getElementById('fileUpload');
-        if (fileUpload) {
-            fileUpload.addEventListener('change', function() {
-                uploadFiles();
-            });
+    // Debug logging on page load
+    console.log('Checking referral fields on page load:');
+    console.log('fpFirstName element:', document.getElementById('fpFirstName'));
+    console.log('fpLastName element:', document.getElementById('fpLastName'));
+    console.log('fpPhoneNumber element:', document.getElementById('fpPhoneNumber'));
+    console.log('fpEmail element:', document.getElementById('fpEmail'));
+
+    // Add event listeners to update hidden fields in the main form when user enters values
+    const fpFirstNameInput = document.getElementById('fpFirstName');
+    const fpLastNameInput = document.getElementById('fpLastName');
+    const fpPhoneNumberInput = document.getElementById('fpPhoneNumber');
+    const fpEmailInput = document.getElementById('fpEmail');
+
+    // Function to update the currentRecordData hidden field
+    function updateCurrentRecordData() {
+        const recordDataField = document.getElementById('currentRecordData');
+        if (recordDataField) {
+            try {
+                const currentData = recordDataField.value ? JSON.parse(recordDataField.value) : {};
+                currentData.fpFirstName = fpFirstNameInput.value || '';
+                currentData.fpLastName = fpLastNameInput.value || '';
+                currentData.fpPhoneNumber = fpPhoneNumberInput.value || '';
+                currentData.fpEmail = fpEmailInput.value || '';
+                recordDataField.value = JSON.stringify(currentData);
+                console.log('Updated currentRecordData with new values:', currentData);
+            } catch (error) {
+                console.error('Error updating currentRecordData:', error);
+            }
         }
     }
+
+    // Load values from sessionStorage on page load
+    if (fpFirstNameInput && sessionStorage.getItem('fpFirstName')) {
+        fpFirstNameInput.value = sessionStorage.getItem('fpFirstName');
+        console.log('Loaded fpFirstName from sessionStorage:', sessionStorage.getItem('fpFirstName'));
+    }
+    if (fpLastNameInput && sessionStorage.getItem('fpLastName')) {
+        fpLastNameInput.value = sessionStorage.getItem('fpLastName');
+        console.log('Loaded fpLastName from sessionStorage:', sessionStorage.getItem('fpLastName'));
+    }
+    if (fpPhoneNumberInput && sessionStorage.getItem('fpPhoneNumber')) {
+        fpPhoneNumberInput.value = sessionStorage.getItem('fpPhoneNumber');
+        console.log('Loaded fpPhoneNumber from sessionStorage:', sessionStorage.getItem('fpPhoneNumber'));
+    }
+    if (fpEmailInput && sessionStorage.getItem('fpEmail')) {
+        fpEmailInput.value = sessionStorage.getItem('fpEmail');
+        console.log('Loaded fpEmail from sessionStorage:', sessionStorage.getItem('fpEmail'));
+    }
+
+    if (fpFirstNameInput) {
+        fpFirstNameInput.addEventListener('input', function() {
+            // Save to sessionStorage
+            sessionStorage.setItem('fpFirstName', this.value);
+            console.log('Saved fpFirstName to sessionStorage:', this.value);
+            
+            // Update hidden field for form submission
+            const hiddenField = document.getElementById('hiddenFpFirstName');
+            if (hiddenField) hiddenField.value = this.value;
+            console.log('Updated hidden field hiddenFpFirstName with value:', this.value);
+            
+            // Update the currentRecordData hidden field
+            updateCurrentRecordData();
+        });
+    }
+
+    if (fpLastNameInput) {
+        fpLastNameInput.addEventListener('input', function() {
+            // Save to sessionStorage
+            sessionStorage.setItem('fpLastName', this.value);
+            console.log('Saved fpLastName to sessionStorage:', this.value);
+            
+            // Update hidden field for form submission
+            const hiddenField = document.getElementById('hiddenFpLastName');
+            if (hiddenField) hiddenField.value = this.value;
+            console.log('Updated hidden field hiddenFpLastName with value:', this.value);
+            
+            // Update the currentRecordData hidden field
+            updateCurrentRecordData();
+        });
+    }
+
+    if (fpPhoneNumberInput) {
+        fpPhoneNumberInput.addEventListener('input', function() {
+            // Save to sessionStorage
+            sessionStorage.setItem('fpPhoneNumber', this.value);
+            console.log('Saved fpPhoneNumber to sessionStorage:', this.value);
+            
+            // Update hidden field for form submission
+            const hiddenField = document.getElementById('hiddenFpPhoneNumber');
+            if (hiddenField) hiddenField.value = this.value;
+            console.log('Updated hidden field hiddenFpPhoneNumber with value:', this.value);
+            
+            // Update the currentRecordData hidden field
+            updateCurrentRecordData();
+        });
+    }
+
+    if (fpEmailInput) {
+        fpEmailInput.addEventListener('input', function() {
+            // Save to sessionStorage
+            sessionStorage.setItem('fpEmail', this.value);
+            console.log('Saved fpEmail to sessionStorage:', this.value);
+            
+            // Update hidden field for form submission
+            const hiddenField = document.getElementById('hiddenFpEmail');
+            if (hiddenField) hiddenField.value = this.value;
+            console.log('Updated hidden field hiddenFpEmail with value:', this.value);
+            
+            // Update the currentRecordData hidden field
+            updateCurrentRecordData();
+        });
+    }
+
+    const submitBtn = document.getElementById('fpSubmit');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function(event) {
+            // CRITICAL: Prevent default form submission behavior
+            event.preventDefault();
+            
+            // Get the current record ID
+            const recordId = document.getElementById('recordId').value;
+            
+            if (!recordId) {
+                showNotification('No record selected. Please search for a record first.', 'error');
+                return false;
+            }
+            
+            // Direct approach to get referral data - get values directly from input fields
+            const fpFirstName = document.getElementById('fpFirstName').value;
+            const fpLastName = document.getElementById('fpLastName').value;
+            const fpPhoneNumber = document.getElementById('fpPhoneNumber').value;
+            const fpEmail = document.getElementById('fpEmail').value;
+            
+            console.log('Direct referral values from input fields:');
+            console.log('fpFirstName:', fpFirstName);
+            console.log('fpLastName:', fpLastName);
+            console.log('fpPhoneNumber:', fpPhoneNumber);
+            console.log('fpEmail:', fpEmail);
+            
+            // Validate the data
+            if (!fpFirstName || !fpLastName) {
+                showNotification('Please enter referral first and last name', 'error');
+                return false;
+            }
+            
+            // Create a separate API call just for the referral data
+            const referralData = {
+                recordId: recordId,
+                fpFirstName: fpFirstName,
+                fpLastName: fpLastName,
+                fpPhoneNumber: fpPhoneNumber,
+                fpEmail: fpEmail
+            };
+            
+            console.log('Sending referral data:', referralData);
+            
+            // Send just the referral data to a new endpoint
+            fetch('/api/update-fp-referral', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(referralData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Referral update result:', result);
+                if (result.success) {
+                    showNotification('Referral data saved successfully', 'success');
+                    
+                    // IMPORTANT: Restore the values to the form fields
+                    // This ensures they don't get reset
+                    setTimeout(() => {
+                        document.getElementById('fpFirstName').value = fpFirstName;
+                        document.getElementById('fpLastName').value = fpLastName;
+                        document.getElementById('fpPhoneNumber').value = fpPhoneNumber;
+                        document.getElementById('fpEmail').value = fpEmail;
+                        console.log('Restored form values after submission');
+                    }, 100);
+                    
+                    // Update searchResults for consistency
+                    if (window.searchResults && window.currentResultIndex >= 0) {
+                        window.searchResults[window.currentResultIndex].fpFirstName = fpFirstName;
+                        window.searchResults[window.currentResultIndex].fpLastName = fpLastName;
+                        window.searchResults[window.currentResultIndex].fpPhoneNumber = fpPhoneNumber;
+                        window.searchResults[window.currentResultIndex].fpEmail = fpEmail;
+                        console.log('Updated searchResults with new referral values');
+                    }
+                    
+                    // Update the currentRecordData hidden field with the new values
+                    const recordDataField = document.getElementById('currentRecordData');
+                    if (recordDataField) {
+                        try {
+                            const currentData = recordDataField.value ? JSON.parse(recordDataField.value) : {};
+                            currentData.fpFirstName = fpFirstName;
+                            currentData.fpLastName = fpLastName;
+                            currentData.fpPhoneNumber = fpPhoneNumber;
+                            currentData.fpEmail = fpEmail;
+                            recordDataField.value = JSON.stringify(currentData);
+                            console.log('Updated currentRecordData after successful submission');
+                        } catch (error) {
+                            console.error('Error updating currentRecordData:', error);
+                        }
+                    }
+                } else {
+                    showNotification('Error saving referral data: ' + result.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving referral data:', error);
+                showNotification('Error saving referral data', 'error');
+            });
+            
+            // Prevent form submission
+            return false;
+        });
+    }
+    
+    // New Record button functionality
+    const newRecordBtn = document.getElementById('fpNewRecord');
+    if (newRecordBtn) {
+        newRecordBtn.addEventListener('click', function() {
+            // Clear all form fields
+            const formFields = [
+                'fpFirstName', 
+                'fpLastName', 
+                'fpPhoneNumber', 
+                'fpEmail', 
+                'fpNotes'
+            ];
+            
+            formFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+            
+            // Clear fence and painting fields
+            const fenceFields = [
+                'fenceType', 'fenceMaterial', 'fenceHeight', 'fenceColor', 
+                'fenceStyle', 'fenceOwnerStatus', 'fenceInstallDate', 'fenceWarrantyExp'
+            ];
+            
+            fenceFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+            
+            const paintingFields = [
+                'paintingType', 'paintingColor', 'paintingBrand', 'paintingFinish',
+                'paintingAreaPainted', 'paintingOwnerStatus', 'paintingDate', 'paintingWarrantyExp'
+            ];
+            
+            paintingFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+            
+            // Reset sales rep fields
+            const salesRepFields = ['fenceSalesRep', 'paintingSalesRep'];
+            salesRepFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+            
+            const otherFields = ['fenceSalesRepOther', 'paintingSalesRepOther'];
+            otherFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.value = '';
+                    field.style.display = 'none';
+                }
+            });
+            
+            // Clear the notes list
+            const notesList = document.getElementById('fpPreviousNotes');
+            if (notesList) notesList.innerHTML = '';
+            
+            // Clear the files list
+            const filesList = document.getElementById('filesList');
+            if (filesList) filesList.innerHTML = '';
+            
+            // Also clear the hidden fields
+            const hiddenFields = ['hiddenFpFirstName', 'hiddenFpLastName', 'hiddenFpPhoneNumber', 'hiddenFpEmail'];
+            hiddenFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+            
+            // Clear sessionStorage
+            sessionStorage.removeItem('fpFirstName');
+            sessionStorage.removeItem('fpLastName');
+            sessionStorage.removeItem('fpPhoneNumber');
+            sessionStorage.removeItem('fpEmail');
+            
+            // Update the currentRecordData hidden field
+            updateCurrentRecordData();
+            
+            showNotification('Form cleared for new record', 'success');
+        });
+    }
+    
+    // View/Download button functionality
+    const viewDownloadBtn = document.getElementById('fpViewDownload');
+    if (viewDownloadBtn) {
+        viewDownloadBtn.addEventListener('click', function() {
+            // In a real application, this would show a list of uploaded files
+            if (document.getElementById('filesList').children.length === 0) {
+                showNotification('No files have been uploaded yet', 'info');
+            } else {
+                showNotification('Viewing uploaded files', 'success');
+            }
+        });
+    }
+    
+    // Set up file upload button
+    const uploadBtn = document.getElementById('fpUpload');
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', function() {
+            // Create a file input element if it doesn't exist
+            let fileUpload = document.getElementById('fileUpload');
+            if (!fileUpload) {
+                fileUpload = document.createElement('input');
+                fileUpload.type = 'file';
+                fileUpload.id = 'fileUpload';
+                fileUpload.style.display = 'none';
+                fileUpload.multiple = true;
+                document.body.appendChild(fileUpload);
+                
+                fileUpload.addEventListener('change', function() {
+                    uploadFiles();
+                });
+            }
+            
+            // Trigger the file input click
+            fileUpload.click();
+        });
+    }
+    
+    // Set up existing file upload input if it exists
+    const fileUpload = document.getElementById('fileUpload');
+    if (fileUpload) {
+        fileUpload.addEventListener('change', function() {
+            uploadFiles();
+        });
+    }
+    
+    // Add event listener for the Add Note button if it exists
+    const addNoteBtn = document.getElementById('fpAddNote');
+    if (addNoteBtn) {
+        addNoteBtn.addEventListener('click', function() {
+            addNote();
+        });
+    }
+}
+
+
+
+
+    // Helper function to update the currentRecordData hidden field
+    function updateCurrentRecordDataField() {
+        const recordDataField = document.getElementById('currentRecordData');
+        if (recordDataField) {
+            try {
+                const currentData = recordDataField.value ? JSON.parse(recordDataField.value) : {};
+                currentData.fpFirstName = fpFirstNameInput.value || '';
+                currentData.fpLastName = fpLastNameInput.value || '';
+                currentData.fpPhoneNumber = fpPhoneNumberInput.value || '';
+                currentData.fpEmail = fpEmailInput.value || '';
+                recordDataField.value = JSON.stringify(currentData);
+                console.log('Updated currentRecordData with user-entered values');
+            } catch (error) {
+                console.error('Error updating currentRecordData:', error);
+            }
+        }
+    }
+
+    // Modify the MutationObserver to respect user input
+    if (window.observer) {
+        window.observer.disconnect();
+        console.log('Disconnected existing MutationObserver');
+    }
+
+    window.observer = new MutationObserver((mutationsList, observer) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'childList') {
+                const fencePaintingSection = document.getElementById('fencingPaintingSection');
+                if (fencePaintingSection && fencePaintingSection.style.display !== 'none') {
+                    console.log('Fence/Painting section loaded, checking if fields need population');
+                    
+                    // Wait a short moment for all elements to be fully rendered
+                    setTimeout(() => {
+                        // Only populate fields if user hasn't modified them
+                        if (!userHasModifiedFields) {
+                            const recordDataField = document.getElementById('currentRecordData');
+                            if (recordDataField && recordDataField.value) {
+                                try {
+                                    const data = JSON.parse(recordDataField.value);
+                                    console.log('Record data from hidden field:', data);
+                                    
+                                    // Populate the referral fields only if they're empty
+                                    const setFieldValueIfEmpty = (id, value) => {
+                                        const element = document.getElementById(id);
+                                        if (element && (!element.value || element.value.trim() === '')) {
+                                            element.value = value || '';
+                                            console.log(`Set value for ${id}: ${value}`);
+                                        } else if (element) {
+                                            console.log(`Field ${id} already has value: ${element.value}, not overwriting`);
+                                        } else {
+                                            console.warn(`Element with ID ${id} not found`);
+                                        }
+                                    };
+                                    
+                                    setFieldValueIfEmpty('fpFirstName', data.fpFirstName);
+                                    setFieldValueIfEmpty('fpLastName', data.fpLastName);
+                                    setFieldValueIfEmpty('fpPhoneNumber', data.fpPhoneNumber);
+                                    setFieldValueIfEmpty('fpEmail', data.fpEmail);
+                                    
+                                    console.log('Successfully populated empty referral fields from hidden field data');
+                                } catch (error) {
+                                    console.error('Error parsing record data:', error);
+                                }
+                            } else {
+                                console.log('No record data available in hidden field or field not found');
+                            }
+                        } else {
+                            console.log('User has modified fields, not overwriting with data from hidden field');
+                        }
+                    }, 100);
+                    
+                    break;
+                }
+            }
+        }
+    });
+
+    // Start observing the body for added nodes
+    window.observer.observe(document.body, { childList: true, subtree: true });
+    console.log('Started new MutationObserver that respects user input');
+
+    const submitBtn = document.getElementById('fpSubmit');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function(event) {
+            // Prevent default form submission behavior
+            event.preventDefault();
+            
+            // Get the current record ID
+            const recordId = document.getElementById('recordId').value;
+            
+            if (!recordId) {
+                showNotification('No record selected. Please search for a record first.', 'error');
+                return;
+            }
+            
+            // Direct approach to get referral data
+            const fpFirstName = document.getElementById('fpFirstName')?.value || '';
+            const fpLastName = document.getElementById('fpLastName')?.value || '';
+            const fpPhoneNumber = document.getElementById('fpPhoneNumber')?.value || '';
+            const fpEmail = document.getElementById('fpEmail')?.value || '';
+            
+            console.log('Direct referral values:');
+            console.log('fpFirstName:', fpFirstName);
+            console.log('fpLastName:', fpLastName);
+            console.log('fpPhoneNumber:', fpPhoneNumber);
+            console.log('fpEmail:', fpEmail);
+            
+            // Validate the data
+            if (!fpFirstName || !fpLastName) {
+                showNotification('Please enter referral first and last name', 'error');
+                return;
+            }
+            
+            // Create a separate API call just for the referral data
+            const referralData = {
+                recordId: recordId,
+                fpFirstName: fpFirstName,
+                fpLastName: fpLastName,
+                fpPhoneNumber: fpPhoneNumber,
+                fpEmail: fpEmail
+            };
+            
+            console.log('Sending referral data:', referralData);
+            
+            // Send just the referral data to a new endpoint
+            fetch('/api/update-fp-referral', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(referralData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Referral update result:', result);
+                if (result.success) {
+                    showNotification('Referral data saved successfully', 'success');
+                    
+                    // Update the hidden fields in the main form
+                    const hiddenFpFirstName = document.getElementById('hiddenFpFirstName');
+                    const hiddenFpLastName = document.getElementById('hiddenFpLastName');
+                    const hiddenFpPhoneNumber = document.getElementById('hiddenFpPhoneNumber');
+                    const hiddenFpEmail = document.getElementById('hiddenFpEmail');
+                    
+                    if (hiddenFpFirstName) hiddenFpFirstName.value = fpFirstName;
+                    if (hiddenFpLastName) hiddenFpLastName.value = fpLastName;
+                    if (hiddenFpPhoneNumber) hiddenFpPhoneNumber.value = fpPhoneNumber;
+                    if (hiddenFpEmail) hiddenFpEmail.value = fpEmail;
+                    
+                    // Also update the currentRecordData hidden field
+                    const recordDataField = document.getElementById('currentRecordData');
+                    if (recordDataField) {
+                        const currentData = recordDataField.value ? JSON.parse(recordDataField.value) : {};
+                        currentData.fpFirstName = fpFirstName;
+                        currentData.fpLastName = fpLastName;
+                        currentData.fpPhoneNumber = fpPhoneNumber;
+                        currentData.fpEmail = fpEmail;
+                        recordDataField.value = JSON.stringify(currentData);
+                        console.log('Updated currentRecordData with new referral values');
+                    }
+                    
+                    // If we have searchResults, update the current record there too
+                    if (window.searchResults && window.currentResultIndex >= 0) {
+                        window.searchResults[window.currentResultIndex].fpFirstName = fpFirstName;
+                        window.searchResults[window.currentResultIndex].fpLastName = fpLastName;
+                        window.searchResults[window.currentResultIndex].fpPhoneNumber = fpPhoneNumber;
+                        window.searchResults[window.currentResultIndex].fpEmail = fpEmail;
+                        console.log('Updated searchResults with new referral values');
+                    }
+                    
+                    // Reset the userHasModifiedFields flag after successful save
+                    userHasModifiedFields = false;
+                } else {
+                    showNotification('Error saving referral data: ' + result.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving referral data:', error);
+                showNotification('Error saving referral data', 'error');
+            });
+        });
+    }
+    
+    // New Record button functionality
+    const newRecordBtn = document.getElementById('fpNewRecord');
+    if (newRecordBtn) {
+        newRecordBtn.addEventListener('click', function() {
+            // Clear all form fields
+            const formFields = [
+                'fpFirstName', 
+                'fpLastName', 
+                'fpPhoneNumber', 
+                'fpEmail', 
+                'fpNotes'
+            ];
+            
+            formFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+            
+            // Clear fence and painting fields
+            const fenceFields = [
+                'fenceType', 'fenceMaterial', 'fenceHeight', 'fenceColor', 
+                'fenceStyle', 'fenceOwnerStatus', 'fenceInstallDate', 'fenceWarrantyExp'
+            ];
+            
+            fenceFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+            
+            const paintingFields = [
+                'paintingType', 'paintingColor', 'paintingBrand', 'paintingFinish',
+                'paintingAreaPainted', 'paintingOwnerStatus', 'paintingDate', 'paintingWarrantyExp'
+            ];
+            
+            paintingFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+            
+            // Reset sales rep fields
+            const salesRepFields = ['fenceSalesRep', 'paintingSalesRep'];
+            salesRepFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+            
+            const otherFields = ['fenceSalesRepOther', 'paintingSalesRepOther'];
+            otherFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.value = '';
+                    field.style.display = 'none';
+                }
+            });
+            
+            // Clear the notes list
+            const notesList = document.getElementById('fpPreviousNotes');
+            if (notesList) notesList.innerHTML = '';
+            
+            // Clear the files list
+            const filesList = document.getElementById('filesList');
+            if (filesList) filesList.innerHTML = '';
+            
+            // Also clear the hidden fields
+            const hiddenFields = ['hiddenFpFirstName', 'hiddenFpLastName', 'hiddenFpPhoneNumber', 'hiddenFpEmail'];
+            hiddenFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+            
+            // Reset the userHasModifiedFields flag
+            userHasModifiedFields = false;
+            
+            showNotification('Form cleared for new record', 'success');
+        });
+    }
+    
+    // View/Download button functionality
+    const viewDownloadBtn = document.getElementById('fpViewDownload');
+    if (viewDownloadBtn) {
+        viewDownloadBtn.addEventListener('click', function() {
+            // In a real application, this would show a list of uploaded files
+            if (document.getElementById('filesList').children.length === 0) {
+                showNotification('No files have been uploaded yet', 'info');
+            } else {
+                showNotification('Viewing uploaded files', 'success');
+            }
+        });
+    }
+    
+    // Set up file upload button
+    const uploadBtn = document.getElementById('fpUpload');
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', function() {
+            // Create a file input element if it doesn't exist
+            let fileUpload = document.getElementById('fileUpload');
+            if (!fileUpload) {
+                fileUpload = document.createElement('input');
+                fileUpload.type = 'file';
+                fileUpload.id = 'fileUpload';
+                fileUpload.style.display = 'none';
+                fileUpload.multiple = true;
+                document.body.appendChild(fileUpload);
+                
+                fileUpload.addEventListener('change', function() {
+                    uploadFiles();
+                });
+            }
+            
+            // Trigger the file input click
+            fileUpload.click();
+        });
+    }
+    
+    // Set up existing file upload input if it exists
+    const fileUpload = document.getElementById('fileUpload');
+    if (fileUpload) {
+        fileUpload.addEventListener('change', function() {
+            uploadFiles();
+        });
+    }
+    
+    // Add event listener for the Add Note button if it exists
+    const addNoteBtn = document.getElementById('fpAddNote');
+    if (addNoteBtn) {
+        addNoteBtn.addEventListener('click', function() {
+            addNote();
+        });
+    }
+}
+
+
+
+
+
     
     // Initialize event handlers for the Fencing/Painting section
     function initializeFencingPaintingHandlers() {
@@ -369,7 +992,7 @@
         const fenceInstallDate = document.getElementById('fenceInstallDate');
         const fenceWarrantyExpiration = document.getElementById('fenceWarrantyExpiration');
         const paintDate = document.getElementById('paintDate');
-        const paintWarrantyExpiration = document.getElementById('paintWarrantyExpiration');
+        const paintWarrantyExpiration = document.getElementById('paintWarrantyExp');
         
         fenceInstallDate.addEventListener('change', function() {
             if (this.value) {
@@ -493,7 +1116,7 @@
         paintingColor: document.getElementById('paintingColor').value, // Changed from paintingColor
         paintingBrand: document.getElementById('paintingBrand').value, // Changed from paintingBrand
         paintingFinish: document.getElementById('paintingFinish').value, // Changed from paintingFinish
-        paintingAreaPainted: document.getElementById('paintingareaingPainted').value, // Changed from paintingAreaPainted
+        paintingAreaPainted: document.getElementById('paintingAreaPainted').value, // Changed from paintingAreaPainted
         paintingOwnerStatus: document.getElementById('paintingOwnerStatus').value, // Changed from paintingOwnerStatus
         paintingDate: document.getElementById('paintingDate').value, // Changed from paintingDate
         paintingWarrantyExp: document.getElementById('paintingWarrantyExp').value, // Changed from paintingWarrantyExp
@@ -501,10 +1124,10 @@
           ? document.getElementById('paintingSalesRepOther').value // Changed from paintingSalesRepOther
           : document.getElementById('paintingSalesRep').value, // Changed from paintingSalesRep
     
-        fpFirstName: document.getElementById('fpFirstName').value,
-        fpLastName: document.getElementById('fpLastName').value,
-        fpPhoneNumber: document.getElementById('fpPhoneNumber').value,
-        fpEmail: document.getElementById('fpEmail').value    
+        fpFirstName: document.getElementById('fpFirstName')?.value || '',
+        fpLastName: document.getElementById('fpLastName')?.value || '',
+        fpPhoneNumber: document.getElementById('fpPhoneNumber')?.value || '',
+        fpEmail: document.getElementById('fpEmail')?.value || ''    
       };
     }
 
@@ -623,6 +1246,8 @@
       setFieldValue('fpLastName', data.fpLastName);
       setFieldValue('fpPhoneNumber', data.fpPhoneNumber);
       setFieldValue('fpEmail', data.fpEmail);
+      console.log('FP First Name after setting:', document.getElementById('fpFirstName'));
+      console.log('FP Last Name after setting:', document.getElementById('fpLastName'));
 
       console.log('Fence type element after setting:', document.getElementById('fenceType'));
       console.log('Fence type value after setting:', document.getElementById('fenceType').value);
