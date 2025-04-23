@@ -295,116 +295,156 @@ inputField.addEventListener('input', function() {
     console.log('fpPhoneNumber element:', document.getElementById('fpPhoneNumber'));
     console.log('fpEmail element:', document.getElementById('fpEmail'));
 
-    // Add event listeners to update hidden fields in the main form when user enters values
+    // Get references to input fields
     const fpFirstNameInput = document.getElementById('fpFirstName');
     const fpLastNameInput = document.getElementById('fpLastName');
     const fpPhoneNumberInput = document.getElementById('fpPhoneNumber');
     const fpEmailInput = document.getElementById('fpEmail');
+    
+    // Function to update the hidden field with current input values
+function updateHiddenField() {
+    const recordDataField = document.getElementById('currentRecordData');
+    if (recordDataField) {
+        try {
+            // Get current values directly from input fields
+            const currentValues = {
+                fpFirstName: fpFirstNameInput.value,
+                fpLastName: fpLastNameInput.value,
+                fpPhoneNumber: fpPhoneNumberInput.value,
+                fpEmail: fpEmailInput.value
+            };
+            
+            // Update the hidden field with these current values
+            recordDataField.value = JSON.stringify(currentValues);
+            console.log('Updated hidden field with new values:', currentValues);
+        } catch (error) {
+            console.error('Error updating hidden field:', error);
+        }
+    }
+}
 
-    // Function to update the currentRecordData hidden field
-    function updateCurrentRecordData() {
+// Add input event listeners to update hidden field when values change
+if (fpFirstNameInput) {
+    fpFirstNameInput.addEventListener('input', updateHiddenField);
+}
+
+if (fpLastNameInput) {
+    fpLastNameInput.addEventListener('input', updateHiddenField);
+}
+
+if (fpPhoneNumberInput) {
+    fpPhoneNumberInput.addEventListener('input', updateHiddenField);
+}
+
+if (fpEmailInput) {
+    fpEmailInput.addEventListener('input', updateHiddenField);
+}
+    
+    // Function to update all storage mechanisms with current field values
+    function updateAllStorage() {
+        // Get current values directly from input fields
+        const fpFirstName = fpFirstNameInput ? fpFirstNameInput.value : '';
+        const fpLastName = fpLastNameInput ? fpLastNameInput.value : '';
+        const fpPhoneNumber = fpPhoneNumberInput ? fpPhoneNumberInput.value : '';
+        const fpEmail = fpEmailInput ? fpEmailInput.value : '';
+        
+        // 1. Update sessionStorage
+        sessionStorage.setItem('fpFirstName', fpFirstName);
+        sessionStorage.setItem('fpLastName', fpLastName);
+        sessionStorage.setItem('fpPhoneNumber', fpPhoneNumber);
+        sessionStorage.setItem('fpEmail', fpEmail);
+        
+        // 2. Update hidden fields in main form
+        const hiddenFpFirstName = document.getElementById('hiddenFpFirstName');
+        const hiddenFpLastName = document.getElementById('hiddenFpLastName');
+        const hiddenFpPhoneNumber = document.getElementById('hiddenFpPhoneNumber');
+        const hiddenFpEmail = document.getElementById('hiddenFpEmail');
+        
+        if (hiddenFpFirstName) hiddenFpFirstName.value = fpFirstName;
+        if (hiddenFpLastName) hiddenFpLastName.value = fpLastName;
+        if (hiddenFpPhoneNumber) hiddenFpPhoneNumber.value = fpPhoneNumber;
+        if (hiddenFpEmail) hiddenFpEmail.value = fpEmail;
+        
+        // 3. Update currentRecordData hidden field
         const recordDataField = document.getElementById('currentRecordData');
         if (recordDataField) {
             try {
                 const currentData = recordDataField.value ? JSON.parse(recordDataField.value) : {};
-                currentData.fpFirstName = fpFirstNameInput.value || '';
-                currentData.fpLastName = fpLastNameInput.value || '';
-                currentData.fpPhoneNumber = fpPhoneNumberInput.value || '';
-                currentData.fpEmail = fpEmailInput.value || '';
+                currentData.fpFirstName = fpFirstName;
+                currentData.fpLastName = fpLastName;
+                currentData.fpPhoneNumber = fpPhoneNumber;
+                currentData.fpEmail = fpEmail;
                 recordDataField.value = JSON.stringify(currentData);
-                console.log('Updated currentRecordData with new values:', currentData);
+                console.log('Updated all storage with current values:', {
+                    fpFirstName, fpLastName, fpPhoneNumber, fpEmail
+                });
             } catch (error) {
                 console.error('Error updating currentRecordData:', error);
             }
         }
     }
-
-    // Load values from sessionStorage on page load
-    if (fpFirstNameInput && sessionStorage.getItem('fpFirstName')) {
-        fpFirstNameInput.value = sessionStorage.getItem('fpFirstName');
-        console.log('Loaded fpFirstName from sessionStorage:', sessionStorage.getItem('fpFirstName'));
-    }
-    if (fpLastNameInput && sessionStorage.getItem('fpLastName')) {
-        fpLastNameInput.value = sessionStorage.getItem('fpLastName');
-        console.log('Loaded fpLastName from sessionStorage:', sessionStorage.getItem('fpLastName'));
-    }
-    if (fpPhoneNumberInput && sessionStorage.getItem('fpPhoneNumber')) {
-        fpPhoneNumberInput.value = sessionStorage.getItem('fpPhoneNumber');
-        console.log('Loaded fpPhoneNumber from sessionStorage:', sessionStorage.getItem('fpPhoneNumber'));
-    }
-    if (fpEmailInput && sessionStorage.getItem('fpEmail')) {
-        fpEmailInput.value = sessionStorage.getItem('fpEmail');
-        console.log('Loaded fpEmail from sessionStorage:', sessionStorage.getItem('fpEmail'));
-    }
-
-    if (fpFirstNameInput) {
-        fpFirstNameInput.addEventListener('input', function() {
-            // Save to sessionStorage
-            sessionStorage.setItem('fpFirstName', this.value);
-            console.log('Saved fpFirstName to sessionStorage:', this.value);
-            
-            // Update hidden field for form submission
-            const hiddenField = document.getElementById('hiddenFpFirstName');
-            if (hiddenField) hiddenField.value = this.value;
-            console.log('Updated hidden field hiddenFpFirstName with value:', this.value);
-            
-            // Update the currentRecordData hidden field
-            updateCurrentRecordData();
+    
+    // Function to load values from storage to input fields
+    function loadValuesFromStorage() {
+        // Try to load from sessionStorage first
+        if (fpFirstNameInput && sessionStorage.getItem('fpFirstName')) {
+            fpFirstNameInput.value = sessionStorage.getItem('fpFirstName');
+        }
+        if (fpLastNameInput && sessionStorage.getItem('fpLastName')) {
+            fpLastNameInput.value = sessionStorage.getItem('fpLastName');
+        }
+        if (fpPhoneNumberInput && sessionStorage.getItem('fpPhoneNumber')) {
+            fpPhoneNumberInput.value = sessionStorage.getItem('fpPhoneNumber');
+        }
+        if (fpEmailInput && sessionStorage.getItem('fpEmail')) {
+            fpEmailInput.value = sessionStorage.getItem('fpEmail');
+        }
+        
+        // If sessionStorage is empty, try loading from currentRecordData
+        if ((!fpFirstNameInput.value || !fpLastNameInput.value) && document.getElementById('currentRecordData')) {
+            try {
+                const recordDataField = document.getElementById('currentRecordData');
+                if (recordDataField && recordDataField.value) {
+                    const data = JSON.parse(recordDataField.value);
+                    if (fpFirstNameInput && data.fpFirstName) fpFirstNameInput.value = data.fpFirstName;
+                    if (fpLastNameInput && data.fpLastName) fpLastNameInput.value = data.fpLastName;
+                    if (fpPhoneNumberInput && data.fpPhoneNumber) fpPhoneNumberInput.value = data.fpPhoneNumber;
+                    if (fpEmailInput && data.fpEmail) fpEmailInput.value = data.fpEmail;
+                }
+            } catch (error) {
+                console.error('Error loading from currentRecordData:', error);
+            }
+        }
+        
+        console.log('Loaded values from storage:', {
+            fpFirstName: fpFirstNameInput ? fpFirstNameInput.value : '',
+            fpLastName: fpLastNameInput ? fpLastNameInput.value : '',
+            fpPhoneNumber: fpPhoneNumberInput ? fpPhoneNumberInput.value : '',
+            fpEmail: fpEmailInput ? fpEmailInput.value : ''
         });
     }
-
-    if (fpLastNameInput) {
-        fpLastNameInput.addEventListener('input', function() {
-            // Save to sessionStorage
-            sessionStorage.setItem('fpLastName', this.value);
-            console.log('Saved fpLastName to sessionStorage:', this.value);
-            
-            // Update hidden field for form submission
-            const hiddenField = document.getElementById('hiddenFpLastName');
-            if (hiddenField) hiddenField.value = this.value;
-            console.log('Updated hidden field hiddenFpLastName with value:', this.value);
-            
-            // Update the currentRecordData hidden field
-            updateCurrentRecordData();
-        });
-    }
-
-    if (fpPhoneNumberInput) {
-        fpPhoneNumberInput.addEventListener('input', function() {
-            // Save to sessionStorage
-            sessionStorage.setItem('fpPhoneNumber', this.value);
-            console.log('Saved fpPhoneNumber to sessionStorage:', this.value);
-            
-            // Update hidden field for form submission
-            const hiddenField = document.getElementById('hiddenFpPhoneNumber');
-            if (hiddenField) hiddenField.value = this.value;
-            console.log('Updated hidden field hiddenFpPhoneNumber with value:', this.value);
-            
-            // Update the currentRecordData hidden field
-            updateCurrentRecordData();
-        });
-    }
-
-    if (fpEmailInput) {
-        fpEmailInput.addEventListener('input', function() {
-            // Save to sessionStorage
-            sessionStorage.setItem('fpEmail', this.value);
-            console.log('Saved fpEmail to sessionStorage:', this.value);
-            
-            // Update hidden field for form submission
-            const hiddenField = document.getElementById('hiddenFpEmail');
-            if (hiddenField) hiddenField.value = this.value;
-            console.log('Updated hidden field hiddenFpEmail with value:', this.value);
-            
-            // Update the currentRecordData hidden field
-            updateCurrentRecordData();
-        });
-    }
-
+    
+    // Load values from storage on page load
+    loadValuesFromStorage();
+    
+    // Add input event listeners to all fields
+    const addInputListener = (element) => {
+        if (element) {
+            element.addEventListener('input', updateAllStorage);
+            element.addEventListener('change', updateAllStorage);
+        }
+    };
+    
+    addInputListener(fpFirstNameInput);
+    addInputListener(fpLastNameInput);
+    addInputListener(fpPhoneNumberInput);
+    addInputListener(fpEmailInput);
+    
+    // Submit button functionality
     const submitBtn = document.getElementById('fpSubmit');
     if (submitBtn) {
         submitBtn.addEventListener('click', function(event) {
-            // CRITICAL: Prevent default form submission behavior
+            // Prevent default form submission behavior
             event.preventDefault();
             
             // Get the current record ID
@@ -415,11 +455,14 @@ inputField.addEventListener('input', function() {
                 return false;
             }
             
-            // Direct approach to get referral data - get values directly from input fields
-            const fpFirstName = document.getElementById('fpFirstName').value;
-            const fpLastName = document.getElementById('fpLastName').value;
-            const fpPhoneNumber = document.getElementById('fpPhoneNumber').value;
-            const fpEmail = document.getElementById('fpEmail').value;
+            // Force update of all storage before submission
+            updateAllStorage();
+            
+            // Get values directly from input fields
+            const fpFirstName = fpFirstNameInput ? fpFirstNameInput.value : '';
+            const fpLastName = fpLastNameInput ? fpLastNameInput.value : '';
+            const fpPhoneNumber = fpPhoneNumberInput ? fpPhoneNumberInput.value : '';
+            const fpEmail = fpEmailInput ? fpEmailInput.value : '';
             
             console.log('Direct referral values from input fields:');
             console.log('fpFirstName:', fpFirstName);
@@ -458,16 +501,6 @@ inputField.addEventListener('input', function() {
                 if (result.success) {
                     showNotification('Referral data saved successfully', 'success');
                     
-                    // IMPORTANT: Restore the values to the form fields
-                    // This ensures they don't get reset
-                    setTimeout(() => {
-                        document.getElementById('fpFirstName').value = fpFirstName;
-                        document.getElementById('fpLastName').value = fpLastName;
-                        document.getElementById('fpPhoneNumber').value = fpPhoneNumber;
-                        document.getElementById('fpEmail').value = fpEmail;
-                        console.log('Restored form values after submission');
-                    }, 100);
-                    
                     // Update searchResults for consistency
                     if (window.searchResults && window.currentResultIndex >= 0) {
                         window.searchResults[window.currentResultIndex].fpFirstName = fpFirstName;
@@ -475,22 +508,6 @@ inputField.addEventListener('input', function() {
                         window.searchResults[window.currentResultIndex].fpPhoneNumber = fpPhoneNumber;
                         window.searchResults[window.currentResultIndex].fpEmail = fpEmail;
                         console.log('Updated searchResults with new referral values');
-                    }
-                    
-                    // Update the currentRecordData hidden field with the new values
-                    const recordDataField = document.getElementById('currentRecordData');
-                    if (recordDataField) {
-                        try {
-                            const currentData = recordDataField.value ? JSON.parse(recordDataField.value) : {};
-                            currentData.fpFirstName = fpFirstName;
-                            currentData.fpLastName = fpLastName;
-                            currentData.fpPhoneNumber = fpPhoneNumber;
-                            currentData.fpEmail = fpEmail;
-                            recordDataField.value = JSON.stringify(currentData);
-                            console.log('Updated currentRecordData after successful submission');
-                        } catch (error) {
-                            console.error('Error updating currentRecordData:', error);
-                        }
                     }
                 } else {
                     showNotification('Error saving referral data: ' + result.message, 'error');
@@ -583,7 +600,19 @@ inputField.addEventListener('input', function() {
             sessionStorage.removeItem('fpEmail');
             
             // Update the currentRecordData hidden field
-            updateCurrentRecordData();
+            const recordDataField = document.getElementById('currentRecordData');
+            if (recordDataField) {
+                try {
+                    const currentData = recordDataField.value ? JSON.parse(recordDataField.value) : {};
+                    currentData.fpFirstName = '';
+                    currentData.fpLastName = '';
+                    currentData.fpPhoneNumber = '';
+                    currentData.fpEmail = '';
+                    recordDataField.value = JSON.stringify(currentData);
+                } catch (error) {
+                    console.error('Error updating currentRecordData:', error);
+                }
+            }
             
             showNotification('Form cleared for new record', 'success');
         });
@@ -642,6 +671,7 @@ inputField.addEventListener('input', function() {
         });
     }
 }
+
 
 
 

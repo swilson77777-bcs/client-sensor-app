@@ -5247,12 +5247,65 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeOtherFields();
 });
 
+// Add this after your existing form submit event listener
 document.getElementById('clientForm').addEventListener('submit', function(event) {
-  console.log('Form submitted');
-  console.log('Current roofSalesRep value:', document.getElementById('roofSalesRep').value);
-  console.log('Current roofSalesRepOther value:', document.getElementById('roofSalesRepOther').value);
+  // This runs after the normal form submission process
   
-  // Don't prevent default - let the form submit normally
+  // Wait a moment for the main form submission to complete
+  setTimeout(function() {
+    // Only proceed if the fp fields exist
+    if (document.getElementById('fpFirstName')) {
+      const recordId = document.getElementById('recordId').value;
+      
+      if (!recordId) {
+        console.error('No record ID found for fp fields update');
+        return;
+      }
+      
+      // Get values directly from the input fields
+      const fpFirstName = document.getElementById('fpFirstName').value;
+      const fpLastName = document.getElementById('fpLastName').value;
+      const fpPhoneNumber = document.getElementById('fpPhoneNumber').value;
+      const fpEmail = document.getElementById('fpEmail').value;
+      
+      console.log('FP field values being sent:', {
+        fpFirstName,
+        fpLastName,
+        fpPhoneNumber,
+        fpEmail
+      });
+      
+      // Create data object for the dedicated endpoint
+      const referralData = {
+        recordId: recordId,
+        fpFirstName: fpFirstName,
+        fpLastName: fpLastName,
+        fpPhoneNumber: fpPhoneNumber,
+        fpEmail: fpEmail
+      };
+      
+      // Send to the dedicated endpoint
+      fetch('/api/update-fp-referral', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(referralData)
+      })
+      .then(response => response.json())
+      .then(result => {
+        console.log('FP update result:', result);
+        if (result.success) {
+          console.log('FP fields updated successfully');
+        } else {
+          console.error('Error updating FP fields:', result.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error updating FP fields:', error);
+      });
+    }
+  }, 500);
 });
 
 // Function to populate referral fields when Fence/Painting section is loaded
