@@ -5,11 +5,7 @@
         <div style="background-color: #d7ebf9; padding: 20px; border-radius: 10px; width: 45%;">
             <h3><strong>Fencing Information</strong></h3>
             <hr style="border: 2px solid #000000; width: 95%;">
-            <input type="hidden" id="hiddenFpFirstName" name="fpFirstName" value="">
-            <input type="hidden" id="hiddenFpLastName" name="fpLastName" value="">
-            <input type="hidden" id="hiddenFpPhoneNumber" name="fpPhoneNumber" value="">
-            <input type="hidden" id="hiddenFpEmail" name="fpEmail" value="">
-
+            
             <label>Fence Type:</label><br>
             <select id="fenceType">
                 <option value="">Select...</option>
@@ -196,7 +192,7 @@
     </div>
     
     <!-- Referral Section -->
-   <form id="fpForm" onsubmit="return false;">
+   
    <div style="background-color: #f0f8ff; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ddd;">
     <h3 style="margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Fence/Painting Referral</h3>
     
@@ -222,7 +218,7 @@
         </div>
     </div>
 </div>
-</form>
+
 
     
     <!-- Notes Section -->
@@ -278,6 +274,19 @@ inputField.addEventListener('input', function() {
             return;
         }
         
+        // Preload the fp fields section to avoid delays
+        const fpSection = document.getElementById('fencingPaintingSection');
+            if (fpSection) {
+        // Ensure all fp fields are initialized
+            ['fpFirstName', 'fpLastName', 'fpPhoneNumber', 'fpEmail'].forEach(id => {
+            const field = document.getElementById(id);
+            if (field) {
+                // Add a data-loaded attribute to track initialization
+                field.setAttribute('data-loaded', 'true');
+            }
+        });
+    }
+
         // Set up event listeners for the new UI elements
         setupFencingPaintingUI();
         
@@ -301,232 +310,85 @@ inputField.addEventListener('input', function() {
     const fpPhoneNumberInput = document.getElementById('fpPhoneNumber');
     const fpEmailInput = document.getElementById('fpEmail');
     
-    // Function to update the hidden field with current input values
-function updateHiddenField() {
-    const recordDataField = document.getElementById('currentRecordData');
-    if (recordDataField) {
-        try {
-            // Get current values directly from input fields
-            const currentValues = {
-                fpFirstName: fpFirstNameInput.value,
-                fpLastName: fpLastNameInput.value,
-                fpPhoneNumber: fpPhoneNumberInput.value,
-                fpEmail: fpEmailInput.value
-            };
-            
-            // Update the hidden field with these current values
-            recordDataField.value = JSON.stringify(currentValues);
-            console.log('Updated hidden field with new values:', currentValues);
-        } catch (error) {
-            console.error('Error updating hidden field:', error);
-        }
-    }
-}
-
-// Add input event listeners to update hidden field when values change
-if (fpFirstNameInput) {
-    fpFirstNameInput.addEventListener('input', updateHiddenField);
-}
-
-if (fpLastNameInput) {
-    fpLastNameInput.addEventListener('input', updateHiddenField);
-}
-
-if (fpPhoneNumberInput) {
-    fpPhoneNumberInput.addEventListener('input', updateHiddenField);
-}
-
-if (fpEmailInput) {
-    fpEmailInput.addEventListener('input', updateHiddenField);
-}
     
-    // Function to update all storage mechanisms with current field values
-    function updateAllStorage() {
-        // Get current values directly from input fields
-        const fpFirstName = fpFirstNameInput ? fpFirstNameInput.value : '';
-        const fpLastName = fpLastNameInput ? fpLastNameInput.value : '';
-        const fpPhoneNumber = fpPhoneNumberInput ? fpPhoneNumberInput.value : '';
-        const fpEmail = fpEmailInput ? fpEmailInput.value : '';
-        
-        // 1. Update sessionStorage
-        sessionStorage.setItem('fpFirstName', fpFirstName);
-        sessionStorage.setItem('fpLastName', fpLastName);
-        sessionStorage.setItem('fpPhoneNumber', fpPhoneNumber);
-        sessionStorage.setItem('fpEmail', fpEmail);
-        
-        // 2. Update hidden fields in main form
-        const hiddenFpFirstName = document.getElementById('hiddenFpFirstName');
-        const hiddenFpLastName = document.getElementById('hiddenFpLastName');
-        const hiddenFpPhoneNumber = document.getElementById('hiddenFpPhoneNumber');
-        const hiddenFpEmail = document.getElementById('hiddenFpEmail');
-        
-        if (hiddenFpFirstName) hiddenFpFirstName.value = fpFirstName;
-        if (hiddenFpLastName) hiddenFpLastName.value = fpLastName;
-        if (hiddenFpPhoneNumber) hiddenFpPhoneNumber.value = fpPhoneNumber;
-        if (hiddenFpEmail) hiddenFpEmail.value = fpEmail;
-        
-        // 3. Update currentRecordData hidden field
-        const recordDataField = document.getElementById('currentRecordData');
-        if (recordDataField) {
-            try {
-                const currentData = recordDataField.value ? JSON.parse(recordDataField.value) : {};
-                currentData.fpFirstName = fpFirstName;
-                currentData.fpLastName = fpLastName;
-                currentData.fpPhoneNumber = fpPhoneNumber;
-                currentData.fpEmail = fpEmail;
-                recordDataField.value = JSON.stringify(currentData);
-                console.log('Updated all storage with current values:', {
-                    fpFirstName, fpLastName, fpPhoneNumber, fpEmail
-                });
-            } catch (error) {
-                console.error('Error updating currentRecordData:', error);
-            }
-        }
-    }
     
-    // Function to load values from storage to input fields
-    function loadValuesFromStorage() {
-        // Try to load from sessionStorage first
-        if (fpFirstNameInput && sessionStorage.getItem('fpFirstName')) {
-            fpFirstNameInput.value = sessionStorage.getItem('fpFirstName');
-        }
-        if (fpLastNameInput && sessionStorage.getItem('fpLastName')) {
-            fpLastNameInput.value = sessionStorage.getItem('fpLastName');
-        }
-        if (fpPhoneNumberInput && sessionStorage.getItem('fpPhoneNumber')) {
-            fpPhoneNumberInput.value = sessionStorage.getItem('fpPhoneNumber');
-        }
-        if (fpEmailInput && sessionStorage.getItem('fpEmail')) {
-            fpEmailInput.value = sessionStorage.getItem('fpEmail');
-        }
-        
-        // If sessionStorage is empty, try loading from currentRecordData
-        if ((!fpFirstNameInput.value || !fpLastNameInput.value) && document.getElementById('currentRecordData')) {
-            try {
-                const recordDataField = document.getElementById('currentRecordData');
-                if (recordDataField && recordDataField.value) {
-                    const data = JSON.parse(recordDataField.value);
-                    if (fpFirstNameInput && data.fpFirstName) fpFirstNameInput.value = data.fpFirstName;
-                    if (fpLastNameInput && data.fpLastName) fpLastNameInput.value = data.fpLastName;
-                    if (fpPhoneNumberInput && data.fpPhoneNumber) fpPhoneNumberInput.value = data.fpPhoneNumber;
-                    if (fpEmailInput && data.fpEmail) fpEmailInput.value = data.fpEmail;
-                }
-            } catch (error) {
-                console.error('Error loading from currentRecordData:', error);
-            }
-        }
-        
-        console.log('Loaded values from storage:', {
-            fpFirstName: fpFirstNameInput ? fpFirstNameInput.value : '',
-            fpLastName: fpLastNameInput ? fpLastNameInput.value : '',
-            fpPhoneNumber: fpPhoneNumberInput ? fpPhoneNumberInput.value : '',
-            fpEmail: fpEmailInput ? fpEmailInput.value : ''
-        });
-    }
-    
-    // Load values from storage on page load
-    loadValuesFromStorage();
-    
-    // Add input event listeners to all fields
-    const addInputListener = (element) => {
-        if (element) {
-            element.addEventListener('input', updateAllStorage);
-            element.addEventListener('change', updateAllStorage);
-        }
-    };
-    
-    addInputListener(fpFirstNameInput);
-    addInputListener(fpLastNameInput);
-    addInputListener(fpPhoneNumberInput);
-    addInputListener(fpEmailInput);
     
     // Submit button functionality
     const submitBtn = document.getElementById('fpSubmit');
-    if (submitBtn) {
-        submitBtn.addEventListener('click', function(event) {
-            // Prevent default form submission behavior
-            event.preventDefault();
-            
-            // Get the current record ID
-            const recordId = document.getElementById('recordId').value;
-            
-            if (!recordId) {
-                showNotification('No record selected. Please search for a record first.', 'error');
-                return false;
-            }
-            
-            // Force update of all storage before submission
-            updateAllStorage();
-            
-            // Get values directly from input fields
-            const fpFirstName = fpFirstNameInput ? fpFirstNameInput.value : '';
-            const fpLastName = fpLastNameInput ? fpLastNameInput.value : '';
-            const fpPhoneNumber = fpPhoneNumberInput ? fpPhoneNumberInput.value : '';
-            const fpEmail = fpEmailInput ? fpEmailInput.value : '';
-            
-            console.log('Direct referral values from input fields:');
-            console.log('fpFirstName:', fpFirstName);
-            console.log('fpLastName:', fpLastName);
-            console.log('fpPhoneNumber:', fpPhoneNumber);
-            console.log('fpEmail:', fpEmail);
-            
-            // Validate the data
-            if (!fpFirstName || !fpLastName) {
-                showNotification('Please enter referral first and last name', 'error');
-                return false;
-            }
-            
-            // Create a separate API call just for the referral data
-            const referralData = {
-                recordId: recordId,
-                fpFirstName: fpFirstName,
-                fpLastName: fpLastName,
-                fpPhoneNumber: fpPhoneNumber,
-                fpEmail: fpEmail
-            };
-            
-            console.log('Sending referral data:', referralData);
-            
-            // Send just the referral data to a new endpoint
-            fetch('/api/update-fp-referral', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(referralData)
-            })
-            .then(response => response.json())
-            .then(result => {
-                console.log('Referral update result:', result);
-                if (result.success) {
-                    showNotification('Referral data saved successfully', 'success');
-                    
-                    // Update searchResults for consistency
-                    if (window.searchResults && window.currentResultIndex >= 0) {
-                        window.searchResults[window.currentResultIndex].fpFirstName = fpFirstName;
-                        window.searchResults[window.currentResultIndex].fpLastName = fpLastName;
-                        window.searchResults[window.currentResultIndex].fpPhoneNumber = fpPhoneNumber;
-                        window.searchResults[window.currentResultIndex].fpEmail = fpEmail;
-                        console.log('Updated searchResults with new referral values');
-                    }
-                } else {
-                    showNotification('Error saving referral data: ' + result.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error saving referral data:', error);
-                showNotification('Error saving referral data', 'error');
-            });
-            
-            // Prevent form submission
+if (submitBtn) {
+    submitBtn.addEventListener('click', function(event) {
+        // Prevent default form submission behavior
+        event.preventDefault();
+        
+        // Get the current record ID
+        const recordId = document.getElementById('recordId').value;
+        
+        if (!recordId) {
+            showNotification('No record selected. Please search for a record first.', 'error');
             return false;
+        }
+        
+        // Get ALL field values using the same function that gets the painting fields
+        const allData = getFencePaintingData();
+        
+        console.log('Sending all fence/painting data:', allData);
+
+         // Log the data being sent (for debugging)
+            console.log('Sending data with fp fields:', {
+            fpFirstName: allData.fpFirstName,
+            fpLastName: allData.fpLastName,
+            fpPhoneNumber: allData.fpPhoneNumber,
+            fpEmail: allData.fpEmail
+         });
+        
+        // Send to the main API endpoint
+        fetch('/api/client', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                recordId: recordId,
+                username: document.getElementById('username')?.value || '',
+                firstName: document.getElementById('firstName')?.value || '',
+                lastName: document.getElementById('lastName')?.value || '',
+                streetAddress: document.getElementById('streetAddress')?.value || '',
+                city: document.getElementById('city')?.value || '',
+                state: document.getElementById('state')?.value || '',
+                zipCode: document.getElementById('zipCode')?.value || '',
+                phoneNumber: document.getElementById('phoneNumber')?.value || '',
+                email: document.getElementById('email')?.value || '',
+                customerNumber: document.getElementById('customerNumber')?.value || '',
+                customerurl: document.getElementById('customerurl')?.value || '',
+                ...allData
+            })
+        })
+        .then(response => response.json())
+        .then(result => {
+            console.log('Update result:', result);
+            if (result.message) {
+                showNotification('Data saved successfully', 'success');
+            } else {
+                showNotification('Error saving data: ' + (result.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving data:', error);
+            showNotification('Error saving data', 'error');
         });
-    }
+        
+        return false;
+    });
+}
+
     
     // New Record button functionality
     const newRecordBtn = document.getElementById('fpNewRecord');
     if (newRecordBtn) {
         newRecordBtn.addEventListener('click', function() {
+            // Reset the field population flag when loading a new record
+            window.disableFpFieldPopulation = false;
+            
             // Clear all form fields
             const formFields = [
                 'fpFirstName', 
@@ -674,321 +536,8 @@ if (fpEmailInput) {
 
 
 
-
-
-    // Helper function to update the currentRecordData hidden field
-    function updateCurrentRecordDataField() {
-        const recordDataField = document.getElementById('currentRecordData');
-        if (recordDataField) {
-            try {
-                const currentData = recordDataField.value ? JSON.parse(recordDataField.value) : {};
-                currentData.fpFirstName = fpFirstNameInput.value || '';
-                currentData.fpLastName = fpLastNameInput.value || '';
-                currentData.fpPhoneNumber = fpPhoneNumberInput.value || '';
-                currentData.fpEmail = fpEmailInput.value || '';
-                recordDataField.value = JSON.stringify(currentData);
-                console.log('Updated currentRecordData with user-entered values');
-            } catch (error) {
-                console.error('Error updating currentRecordData:', error);
-            }
-        }
-    }
-
-    // Modify the MutationObserver to respect user input
-    if (window.observer) {
-        window.observer.disconnect();
-        console.log('Disconnected existing MutationObserver');
-    }
-
-    window.observer = new MutationObserver((mutationsList, observer) => {
-        for (const mutation of mutationsList) {
-            if (mutation.type === 'childList') {
-                const fencePaintingSection = document.getElementById('fencingPaintingSection');
-                if (fencePaintingSection && fencePaintingSection.style.display !== 'none') {
-                    console.log('Fence/Painting section loaded, checking if fields need population');
-                    
-                    // Wait a short moment for all elements to be fully rendered
-                    setTimeout(() => {
-                        // Only populate fields if user hasn't modified them
-                        if (!userHasModifiedFields) {
-                            const recordDataField = document.getElementById('currentRecordData');
-                            if (recordDataField && recordDataField.value) {
-                                try {
-                                    const data = JSON.parse(recordDataField.value);
-                                    console.log('Record data from hidden field:', data);
-                                    
-                                    // Populate the referral fields only if they're empty
-                                    const setFieldValueIfEmpty = (id, value) => {
-                                        const element = document.getElementById(id);
-                                        if (element && (!element.value || element.value.trim() === '')) {
-                                            element.value = value || '';
-                                            console.log(`Set value for ${id}: ${value}`);
-                                        } else if (element) {
-                                            console.log(`Field ${id} already has value: ${element.value}, not overwriting`);
-                                        } else {
-                                            console.warn(`Element with ID ${id} not found`);
-                                        }
-                                    };
-                                    
-                                    setFieldValueIfEmpty('fpFirstName', data.fpFirstName);
-                                    setFieldValueIfEmpty('fpLastName', data.fpLastName);
-                                    setFieldValueIfEmpty('fpPhoneNumber', data.fpPhoneNumber);
-                                    setFieldValueIfEmpty('fpEmail', data.fpEmail);
-                                    
-                                    console.log('Successfully populated empty referral fields from hidden field data');
-                                } catch (error) {
-                                    console.error('Error parsing record data:', error);
-                                }
-                            } else {
-                                console.log('No record data available in hidden field or field not found');
-                            }
-                        } else {
-                            console.log('User has modified fields, not overwriting with data from hidden field');
-                        }
-                    }, 100);
-                    
-                    break;
-                }
-            }
-        }
-    });
-
-    // Start observing the body for added nodes
-    window.observer.observe(document.body, { childList: true, subtree: true });
-    console.log('Started new MutationObserver that respects user input');
-
-    const submitBtn = document.getElementById('fpSubmit');
-    if (submitBtn) {
-        submitBtn.addEventListener('click', function(event) {
-            // Prevent default form submission behavior
-            event.preventDefault();
-            
-            // Get the current record ID
-            const recordId = document.getElementById('recordId').value;
-            
-            if (!recordId) {
-                showNotification('No record selected. Please search for a record first.', 'error');
-                return;
-            }
-            
-            // Direct approach to get referral data
-            const fpFirstName = document.getElementById('fpFirstName')?.value || '';
-            const fpLastName = document.getElementById('fpLastName')?.value || '';
-            const fpPhoneNumber = document.getElementById('fpPhoneNumber')?.value || '';
-            const fpEmail = document.getElementById('fpEmail')?.value || '';
-            
-            console.log('Direct referral values:');
-            console.log('fpFirstName:', fpFirstName);
-            console.log('fpLastName:', fpLastName);
-            console.log('fpPhoneNumber:', fpPhoneNumber);
-            console.log('fpEmail:', fpEmail);
-            
-            // Validate the data
-            if (!fpFirstName || !fpLastName) {
-                showNotification('Please enter referral first and last name', 'error');
-                return;
-            }
-            
-            // Create a separate API call just for the referral data
-            const referralData = {
-                recordId: recordId,
-                fpFirstName: fpFirstName,
-                fpLastName: fpLastName,
-                fpPhoneNumber: fpPhoneNumber,
-                fpEmail: fpEmail
-            };
-            
-            console.log('Sending referral data:', referralData);
-            
-            // Send just the referral data to a new endpoint
-            fetch('/api/update-fp-referral', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(referralData)
-            })
-            .then(response => response.json())
-            .then(result => {
-                console.log('Referral update result:', result);
-                if (result.success) {
-                    showNotification('Referral data saved successfully', 'success');
-                    
-                    // Update the hidden fields in the main form
-                    const hiddenFpFirstName = document.getElementById('hiddenFpFirstName');
-                    const hiddenFpLastName = document.getElementById('hiddenFpLastName');
-                    const hiddenFpPhoneNumber = document.getElementById('hiddenFpPhoneNumber');
-                    const hiddenFpEmail = document.getElementById('hiddenFpEmail');
-                    
-                    if (hiddenFpFirstName) hiddenFpFirstName.value = fpFirstName;
-                    if (hiddenFpLastName) hiddenFpLastName.value = fpLastName;
-                    if (hiddenFpPhoneNumber) hiddenFpPhoneNumber.value = fpPhoneNumber;
-                    if (hiddenFpEmail) hiddenFpEmail.value = fpEmail;
-                    
-                    // Also update the currentRecordData hidden field
-                    const recordDataField = document.getElementById('currentRecordData');
-                    if (recordDataField) {
-                        const currentData = recordDataField.value ? JSON.parse(recordDataField.value) : {};
-                        currentData.fpFirstName = fpFirstName;
-                        currentData.fpLastName = fpLastName;
-                        currentData.fpPhoneNumber = fpPhoneNumber;
-                        currentData.fpEmail = fpEmail;
-                        recordDataField.value = JSON.stringify(currentData);
-                        console.log('Updated currentRecordData with new referral values');
-                    }
-                    
-                    // If we have searchResults, update the current record there too
-                    if (window.searchResults && window.currentResultIndex >= 0) {
-                        window.searchResults[window.currentResultIndex].fpFirstName = fpFirstName;
-                        window.searchResults[window.currentResultIndex].fpLastName = fpLastName;
-                        window.searchResults[window.currentResultIndex].fpPhoneNumber = fpPhoneNumber;
-                        window.searchResults[window.currentResultIndex].fpEmail = fpEmail;
-                        console.log('Updated searchResults with new referral values');
-                    }
-                    
-                    // Reset the userHasModifiedFields flag after successful save
-                    userHasModifiedFields = false;
-                } else {
-                    showNotification('Error saving referral data: ' + result.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error saving referral data:', error);
-                showNotification('Error saving referral data', 'error');
-            });
-        });
-    }
+        
     
-    // New Record button functionality
-    const newRecordBtn = document.getElementById('fpNewRecord');
-    if (newRecordBtn) {
-        newRecordBtn.addEventListener('click', function() {
-            // Clear all form fields
-            const formFields = [
-                'fpFirstName', 
-                'fpLastName', 
-                'fpPhoneNumber', 
-                'fpEmail', 
-                'fpNotes'
-            ];
-            
-            formFields.forEach(id => {
-                const field = document.getElementById(id);
-                if (field) field.value = '';
-            });
-            
-            // Clear fence and painting fields
-            const fenceFields = [
-                'fenceType', 'fenceMaterial', 'fenceHeight', 'fenceColor', 
-                'fenceStyle', 'fenceOwnerStatus', 'fenceInstallDate', 'fenceWarrantyExp'
-            ];
-            
-            fenceFields.forEach(id => {
-                const field = document.getElementById(id);
-                if (field) field.value = '';
-            });
-            
-            const paintingFields = [
-                'paintingType', 'paintingColor', 'paintingBrand', 'paintingFinish',
-                'paintingAreaPainted', 'paintingOwnerStatus', 'paintingDate', 'paintingWarrantyExp'
-            ];
-            
-            paintingFields.forEach(id => {
-                const field = document.getElementById(id);
-                if (field) field.value = '';
-            });
-            
-            // Reset sales rep fields
-            const salesRepFields = ['fenceSalesRep', 'paintingSalesRep'];
-            salesRepFields.forEach(id => {
-                const field = document.getElementById(id);
-                if (field) field.value = '';
-            });
-            
-            const otherFields = ['fenceSalesRepOther', 'paintingSalesRepOther'];
-            otherFields.forEach(id => {
-                const field = document.getElementById(id);
-                if (field) {
-                    field.value = '';
-                    field.style.display = 'none';
-                }
-            });
-            
-            // Clear the notes list
-            const notesList = document.getElementById('fpPreviousNotes');
-            if (notesList) notesList.innerHTML = '';
-            
-            // Clear the files list
-            const filesList = document.getElementById('filesList');
-            if (filesList) filesList.innerHTML = '';
-            
-            // Also clear the hidden fields
-            const hiddenFields = ['hiddenFpFirstName', 'hiddenFpLastName', 'hiddenFpPhoneNumber', 'hiddenFpEmail'];
-            hiddenFields.forEach(id => {
-                const field = document.getElementById(id);
-                if (field) field.value = '';
-            });
-            
-            // Reset the userHasModifiedFields flag
-            userHasModifiedFields = false;
-            
-            showNotification('Form cleared for new record', 'success');
-        });
-    }
-    
-    // View/Download button functionality
-    const viewDownloadBtn = document.getElementById('fpViewDownload');
-    if (viewDownloadBtn) {
-        viewDownloadBtn.addEventListener('click', function() {
-            // In a real application, this would show a list of uploaded files
-            if (document.getElementById('filesList').children.length === 0) {
-                showNotification('No files have been uploaded yet', 'info');
-            } else {
-                showNotification('Viewing uploaded files', 'success');
-            }
-        });
-    }
-    
-    // Set up file upload button
-    const uploadBtn = document.getElementById('fpUpload');
-    if (uploadBtn) {
-        uploadBtn.addEventListener('click', function() {
-            // Create a file input element if it doesn't exist
-            let fileUpload = document.getElementById('fileUpload');
-            if (!fileUpload) {
-                fileUpload = document.createElement('input');
-                fileUpload.type = 'file';
-                fileUpload.id = 'fileUpload';
-                fileUpload.style.display = 'none';
-                fileUpload.multiple = true;
-                document.body.appendChild(fileUpload);
-                
-                fileUpload.addEventListener('change', function() {
-                    uploadFiles();
-                });
-            }
-            
-            // Trigger the file input click
-            fileUpload.click();
-        });
-    }
-    
-    // Set up existing file upload input if it exists
-    const fileUpload = document.getElementById('fileUpload');
-    if (fileUpload) {
-        fileUpload.addEventListener('change', function() {
-            uploadFiles();
-        });
-    }
-    
-    // Add event listener for the Add Note button if it exists
-    const addNoteBtn = document.getElementById('fpAddNote');
-    if (addNoteBtn) {
-        addNoteBtn.addEventListener('click', function() {
-            addNote();
-        });
-    }
-}
 
 
 
@@ -1003,8 +552,8 @@ if (fpEmailInput) {
             otherInput.style.display = this.value === 'other' ? 'block' : 'none';
         });
         
-        document.getElementById('paintSalesRep').addEventListener('change', function() {
-            const otherInput = document.getElementById('paintSalesRepOther');
+        document.getElementById('paintingSalesRep').addEventListener('change', function() {
+            const otherInput = document.getElementById('paintingSalesRepOther');
             otherInput.style.display = this.value === 'other' ? 'block' : 'none';
         });
         
@@ -1047,8 +596,8 @@ if (fpEmailInput) {
     
     // Add a note to the notes list
     function addNote() {
-        const notesTextarea = document.getElementById('notesTextarea');
-        const notesList = document.getElementById('notesList');
+        const notesTextarea = document.getElementById('fpNotes');
+        const notesList = document.getElementById('fpPreviousNotes');
         
         if (notesTextarea.value.trim() === '') {
             showNotification('Please enter a note', 'error');
@@ -1127,48 +676,70 @@ if (fpEmailInput) {
         showNotification('Files uploaded successfully', 'success');
     }
 
-    // Add this function to fencePaintingSection.html
-    function getFencePaintingData() {
-      return {
-        fenceType: document.getElementById('fenceType').value,
-        fenceMaterial: document.getElementById('fenceMaterial').value,
-        fenceHeight: document.getElementById('fenceHeight').value,
-        fenceColor: document.getElementById('fenceColor').value,
-        fenceStyle: document.getElementById('fenceStyle').value,
-        fenceOwnerStatus: document.getElementById('fenceOwnerStatus').value,
-        fenceInstallDate: document.getElementById('fenceInstallDate').value,
-        fenceWarrantyExp: document.getElementById('fenceWarrantyExp').value, // Changed from fenceWarrantyExp
-        fenceSalesRep: document.getElementById('fenceSalesRep').value === 'other' 
-          ? document.getElementById('fenceSalesRepOther').value 
-          : document.getElementById('fenceSalesRep').value,
-        
-        paintingType: document.getElementById('paintingType').value, // Changed from paintingType
-        paintingColor: document.getElementById('paintingColor').value, // Changed from paintingColor
-        paintingBrand: document.getElementById('paintingBrand').value, // Changed from paintingBrand
-        paintingFinish: document.getElementById('paintingFinish').value, // Changed from paintingFinish
-        paintingAreaPainted: document.getElementById('paintingAreaPainted').value, // Changed from paintingAreaPainted
-        paintingOwnerStatus: document.getElementById('paintingOwnerStatus').value, // Changed from paintingOwnerStatus
-        paintingDate: document.getElementById('paintingDate').value, // Changed from paintingDate
-        paintingWarrantyExp: document.getElementById('paintingWarrantyExp').value, // Changed from paintingWarrantyExp
-        paintingSalesRep: document.getElementById('paintingSalesRep').value === 'other' // Changed from paintingSalesRep
-          ? document.getElementById('paintingSalesRepOther').value // Changed from paintingSalesRepOther
-          : document.getElementById('paintingSalesRep').value, // Changed from paintingSalesRep
+// Add this function to fencePaintingSection.html
+function getFencePaintingData() {
+  // Log that we're collecting data to help with debugging
+  console.log('Getting all fence/painting data including fp fields');
+  
+  // Create the data object with all fields
+  const data = {
+    fenceType: document.getElementById('fenceType')?.value || '',
+    fenceMaterial: document.getElementById('fenceMaterial')?.value || '',
+    fenceHeight: document.getElementById('fenceHeight')?.value || '',
+    fenceColor: document.getElementById('fenceColor')?.value || '',
+    fenceStyle: document.getElementById('fenceStyle')?.value || '',
+    fenceOwnerStatus: document.getElementById('fenceOwnerStatus')?.value || '',
+    fenceInstallDate: document.getElementById('fenceInstallDate')?.value || '',
+    fenceWarrantyExp: document.getElementById('fenceWarrantyExp')?.value || '',
+    fenceSalesRep: document.getElementById('fenceSalesRep')?.value === 'other' 
+      ? document.getElementById('fenceSalesRepOther')?.value || ''
+      : document.getElementById('fenceSalesRep')?.value || '',
     
-        fpFirstName: document.getElementById('fpFirstName')?.value || '',
-        fpLastName: document.getElementById('fpLastName')?.value || '',
-        fpPhoneNumber: document.getElementById('fpPhoneNumber')?.value || '',
-        fpEmail: document.getElementById('fpEmail')?.value || ''    
-      };
-    }
+    paintingType: document.getElementById('paintingType')?.value || '',
+    paintingColor: document.getElementById('paintingColor')?.value || '',
+    paintingBrand: document.getElementById('paintingBrand')?.value || '',
+    paintingFinish: document.getElementById('paintingFinish')?.value || '',
+    paintingAreaPainted: document.getElementById('paintingAreaPainted')?.value || '',
+    paintingOwnerStatus: document.getElementById('paintingOwnerStatus')?.value || '',
+    paintingDate: document.getElementById('paintingDate')?.value || '',
+    paintingWarrantyExp: document.getElementById('paintingWarrantyExp')?.value || '',
+    paintingSalesRep: document.getElementById('paintingSalesRep')?.value === 'other'
+      ? document.getElementById('paintingSalesRepOther')?.value || ''
+      : document.getElementById('paintingSalesRep')?.value || '',
 
-    // Make this function accessible globally
-    window.getFencePaintingData = getFencePaintingData;
+    // Explicitly include the fp fields with proper error handling
+    fpFirstName: document.getElementById('fpFirstName')?.value || '',
+    fpLastName: document.getElementById('fpLastName')?.value || '',
+    fpPhoneNumber: document.getElementById('fpPhoneNumber')?.value || '',
+    fpEmail: document.getElementById('fpEmail')?.value || ''
+  };
+  
+  // Log the fp fields specifically to verify they're being collected
+  console.log('FP fields being collected:', {
+    fpFirstName: data.fpFirstName,
+    fpLastName: data.fpLastName,
+    fpPhoneNumber: data.fpPhoneNumber,
+    fpEmail: data.fpEmail
+  });
+  
+  return data;
+}
+
+// Make this function accessible globally
+window.getFencePaintingData = getFencePaintingData;
+
 
     // Add this function to fencePaintingSection.html
     function setFencePaintingData(data) {
       console.log('Setting fence/painting data:', data);
       console.log('Fence type from data:', data.fenceType);
       console.log('Paint type from data:', data.paintingType);
+
+      // IMPORTANT: Add this check to ensure data is available
+  if (!data) {
+    console.warn('No data provided to setFencePaintingData');
+    return;
+  }
       
       // Helper function to safely set field values
       const setFieldValue = (id, value) => {

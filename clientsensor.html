@@ -402,11 +402,7 @@
         
         <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
             <div class="form-group">
-                <input type="hidden" id="hiddenFpFirstName" name="fpFirstName" value="">
-                <input type="hidden" id="hiddenFpLastName" name="fpLastName" value="">
-                <input type="hidden" id="hiddenFpPhoneNumber" name="fpPhoneNumber" value="">
-                <input type="hidden" id="hiddenFpEmail" name="fpEmail" value="">
-
+                
                 <label for="companyName">Company Name:</label>
                 <input type="text" id="companyName" class="wide-input" value="Examp Testing Industries">
             </div>
@@ -704,6 +700,7 @@
 <form id="clientForm">
     <input type="hidden" id="recordId" name="recordId">    
     <h3>User Data</h3>
+
         
 <div class="button-group">
     <button type="button" class="btn btn-success ml-2" onclick="prepareNextUser()" style="background-color: #6FEC1B; color:black;">New Record</button>
@@ -1336,6 +1333,42 @@
 <div id="sectionContainer"></div>
 
     <script>
+     // Global variables
+
+
+
+// Custom function to populate fp fields ONLY when explicitly called
+function populateFpFields() {
+    console.log('Manually populating fp fields');
+    const recordDataField = document.getElementById('currentRecordData');
+    if (recordDataField && recordDataField.value) {
+        try {
+            const data = JSON.parse(recordDataField.value);
+            console.log('Record data from hidden field:', data);
+            
+            // Populate the referral fields directly
+            const setFieldValue = (id, value) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.value = value || '';
+                    console.log(`Set value for ${id}: ${value}`);
+                }
+            };
+            
+            setFieldValue('fpFirstName', data.fpFirstName);
+            setFieldValue('fpLastName', data.fpLastName);
+            setFieldValue('fpPhoneNumber', data.fpPhoneNumber);
+            setFieldValue('fpEmail', data.fpEmail);
+            
+            console.log('Successfully populated referral fields from hidden field data');
+        } catch (error) {
+            console.error('Error parsing record data:', error);
+        }
+    }
+}
+
+
+     
      // Force immediate scroll to top when script loads
 window.scrollTo(0, 0);
 
@@ -2911,8 +2944,7 @@ function displayCurrentRecord() {
 
     // Store the current record data in a hidden field for later use
     const recordDataField = document.getElementById('currentRecordData');
-    if (recordDataField) {
-        // Store the referral fields to make them accessible to the MutationObserver
+    if (recordDataField) {        
         const referralData = {
             fpFirstName: data.fpFirstName || '',
             fpLastName: data.fpLastName || '',
@@ -3096,7 +3128,7 @@ function displayCurrentRecord() {
         setFieldValue('fenceStyle', data.fenceStyle);
         setFieldValue('fenceOwnerStatus', data.fenceOwnerStatus);
         setFieldValue('fenceInstallDate', data.fenceInstallDate);
-        setFieldValue('fenceWarrantyExpiration', data.fenceWarrantyExp); // Changed from fenceWarrantyExp to fenceWarrantyExpiration
+        setFieldValue('fenceWarrantyExp', data.fenceWarrantyExp); // Changed from fenceWarrantyExp to fenceWarrantyExpiration
         
         // Handle fence sales rep with "other" option
         const fenceSalesSelect = document.getElementById('fenceSalesRep');
@@ -3355,6 +3387,11 @@ document.getElementById('clientForm').addEventListener('submit', async (e) => {
         formData.paintingDate = getValue('paintingDate');
         formData.paintingWarrantyExp = getValue('paintingWarrantyExp');
         formData.paintingSalesRep = getSalesRepValue('paintingSalesRep', 'paintingSalesRepOther');
+        formData.fpFirstName = getValue('fpFirstName');
+        formData.fpLastName = getValue('fpLastName');
+        formData.fpPhoneNumber = getValue('fpPhoneNumber');
+        formData.fpEmail = getValue('fpEmail')
+        
     }
 
     console.log('Form Data:', JSON.stringify(formData, null, 2));
@@ -3468,43 +3505,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('gutterClientType').addEventListener('change', handleGutterDropdownChange);
     });
 
-    // In your MutationObserver callback
-const recordDataField = document.getElementById('currentRecordData');
-if (recordDataField && recordDataField.value) {
-    try {
-        const data = JSON.parse(recordDataField.value);
-        
-        // Only set values if fields are empty
-        const setFieldValueIfEmpty = (id, value) => {
-            const element = document.getElementById(id);
-            if (element && (!element.value || element.value.trim() === '')) {
-                element.value = value || '';
-                console.log(`Set value for ${id}: ${value}`);
-            } else if (element) {
-                console.log(`Field ${id} already has value: ${element.value}, not overwriting`);
-            }
-        };
-        
-        setFieldValueIfEmpty('fpFirstName', data.fpFirstName);
-        setFieldValueIfEmpty('fpLastName', data.fpLastName);
-        setFieldValueIfEmpty('fpPhoneNumber', data.fpPhoneNumber);
-        setFieldValueIfEmpty('fpEmail', data.fpEmail);
-        
-        // Disconnect observer after initial population to prevent further interference
-        observer.disconnect();
-        console.log('MutationObserver disconnected to prevent overwriting user input');
-    } catch (error) {
-        console.error('Error parsing record data:', error);
-    }
-}
-
-
-
-     
-
-    gutterDropdowns.forEach(id => {
-        const dropdown = document.getElementById(id);
-        observer.observe(dropdown, { childList: true });
+        gutterDropdowns.forEach(id => {
+        const dropdown = document.getElementById(id);        
     });
 });
 
@@ -4880,21 +4882,60 @@ function showFencingPaintingSection() {
   }
 
   // Fetch and load the fence/painting section
-  fetch('/fencePaintingSection.html')
-    .then(response => {
-      if (!response.ok) throw new Error('Network response was not ok');
-      return response.text();
-    })
-    .then(html => {
-      const container = document.getElementById('sectionContainer');
-      if (!container) throw new Error('sectionContainer not found');
-      container.innerHTML = html;
-      
-      // Add this to verify elements are properly loaded
-      console.log('Fence/Painting section loaded:');
-      console.log('fenceType element:', document.getElementById('fenceType'));
-      console.log('fenceSalesRep element:', document.getElementById('fenceSalesRep'));
-      console.log('paintType element:', document.getElementById('paintType'));
+// In your main script where you're showing the Fencing/Painting section
+fetch('/fencePaintingSection.html')
+  .then(response => {
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.text();
+  })
+  .then(html => {
+    const container = document.getElementById('sectionContainer');
+    if (!container) throw new Error('sectionContainer not found');
+    
+    // Insert the HTML content
+    container.innerHTML = html;
+    
+    // Extract and execute scripts in the loaded HTML
+    const scripts = container.querySelectorAll('script');
+    scripts.forEach(oldScript => {
+      const newScript = document.createElement('script');
+      if (oldScript.src) {
+        newScript.src = oldScript.src;
+      } else {
+        newScript.textContent = oldScript.textContent;
+      }
+      document.head.appendChild(newScript);
+      // Remove the old script tag
+      oldScript.parentNode.removeChild(oldScript);
+    });
+    
+    // Make the section visible
+    document.getElementById('fencingPaintingSection').style.display = 'block';
+    
+    // Add this to verify elements are properly loaded
+    console.log('Fence/Painting section loaded:');
+    console.log('fenceType element:', document.getElementById('fenceType'));
+    console.log('fenceSalesRep element:', document.getElementById('fenceSalesRep'));
+    console.log('paintType element:', document.getElementById('paintType'));
+    
+    // Wait for scripts to be fully loaded and executed
+    setTimeout(() => {
+      // Now check if the setFencePaintingData function exists before calling it
+      if (typeof window.setFencePaintingData === 'function') {
+        // Get data from hidden field
+        const recordDataField = document.getElementById('currentRecordData');
+        if (recordDataField && recordDataField.value) {
+          try {
+            const data = JSON.parse(recordDataField.value);
+            // Call setFencePaintingData
+            window.setFencePaintingData(data);
+          } catch (error) {
+            console.error('Error parsing record data:', error);
+          }
+        }
+      } else {
+        console.error('setFencePaintingData function not available');
+      }
       
       // If we have a current record loaded, populate the fence/painting fields
       if (searchResults && searchResults.length > 0 && currentResultIndex >= 0) {
@@ -5009,12 +5050,14 @@ function showFencingPaintingSection() {
           }
         });
       }
-    })
-    .catch(error => {
-      console.error('Error loading Fencing/Painting section:', error);
-      showNotification('Could not load Fencing/Painting section', 'error');
-    });
+    }, 300); // Longer timeout to ensure scripts are loaded
+  })
+  .catch(error => {
+    console.error('Error loading Fencing/Painting section:', error);
+    showNotification('Could not load Fencing/Painting section', 'error');
+  });
 }
+
 
 
 
@@ -5087,66 +5130,6 @@ function showLicenseRequiredNotification(featureName) {
     showNotification(`License required for ${featureName} feature`, 'error');
 }
 
-/*
-function showFencingPaintingSection() {
-  console.log("Attempting to show Fencing/Painting section");
-  
-  // AGGRESSIVE APPROACH: Find and hide ALL possible R/G/A related elements
-  // Using multiple selectors and approaches
-  try {
-    // Method 1: Direct ID
-    const rgaSection = document.getElementById('roofGuttersAtticSection');
-    if (rgaSection) {
-      console.log('Found and hiding roofGuttersAtticSection by ID');
-      rgaSection.style.display = 'none';
-    }
-    
-    // Method 2: Query for any divs containing roof/gutter/attic in their ID
-    const rgaElements = document.querySelectorAll('div[id*="roof"], div[id*="gutter"], div[id*="attic"]');
-    console.log(`Found ${rgaElements.length} elements with roof/gutter/attic in ID`);
-    rgaElements.forEach(el => {
-      console.log(`Hiding element: ${el.id || el.tagName}`);
-      el.style.display = 'none';
-    });
-    
-    // Method 3: Look for specific container that might hold R/G/A content
-    const sectionContainer = document.getElementById('sectionContainer');
-    if (sectionContainer) {
-      // Clear any existing R/G/A content from the container
-      const rgaContent = sectionContainer.querySelector('[id*="roof"], [id*="gutter"], [id*="attic"]');
-      if (rgaContent) {
-        console.log('Found R/G/A content in sectionContainer, removing');
-        rgaContent.style.display = 'none';
-      }
-    }
-  } catch (e) {
-    console.error('Error while trying to hide R/G/A sections:', e);
-    // Continue execution even if there's an error
-  }
-
-  // Your existing working code to load Fencing/Painting
-  fetch('/fencePaintingSection.html')
-    .then(response => {
-      if (!response.ok) throw new Error('Network response was not ok');
-      return response.text();
-    })
-    .then(html => {
-      const container = document.getElementById('sectionContainer');
-      if (!container) throw new Error('sectionContainer not found');
-      
-      // Clear the container before adding new content
-      // This is a key step - it removes whatever was there before
-      container.innerHTML = '';
-      
-      // Now add the new content
-      container.innerHTML = html;
-    })
-    .catch(error => {
-      console.error('Error loading Fencing/Painting section:', error);
-      showNotification('Could not load Fencing/Painting section', 'error');
-    });
-}
-*/
 
 function showRoofGuttersAtticSection() {
   console.log('Restoring Roof/Gutters/Attic section');
@@ -5247,66 +5230,25 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeOtherFields();
 });
 
-// Add this after your existing form submit event listener
+// Client Form submission
 document.getElementById('clientForm').addEventListener('submit', function(event) {
-  // This runs after the normal form submission process
+  // Log the fp values right before submission
+  if (document.getElementById('fpFirstName')) {
+    console.log('FP VALUES BEFORE SUBMISSION:', {
+      fpFirstName: document.getElementById('fpFirstName').value,
+      fpLastName: document.getElementById('fpLastName').value,
+      fpPhoneNumber: document.getElementById('fpPhoneNumber').value,
+      fpEmail: document.getElementById('fpEmail').value
+    });
+    
+    // Update hidden fields with current fp values before submission
+    
+  }
   
-  // Wait a moment for the main form submission to complete
-  setTimeout(function() {
-    // Only proceed if the fp fields exist
-    if (document.getElementById('fpFirstName')) {
-      const recordId = document.getElementById('recordId').value;
-      
-      if (!recordId) {
-        console.error('No record ID found for fp fields update');
-        return;
-      }
-      
-      // Get values directly from the input fields
-      const fpFirstName = document.getElementById('fpFirstName').value;
-      const fpLastName = document.getElementById('fpLastName').value;
-      const fpPhoneNumber = document.getElementById('fpPhoneNumber').value;
-      const fpEmail = document.getElementById('fpEmail').value;
-      
-      console.log('FP field values being sent:', {
-        fpFirstName,
-        fpLastName,
-        fpPhoneNumber,
-        fpEmail
-      });
-      
-      // Create data object for the dedicated endpoint
-      const referralData = {
-        recordId: recordId,
-        fpFirstName: fpFirstName,
-        fpLastName: fpLastName,
-        fpPhoneNumber: fpPhoneNumber,
-        fpEmail: fpEmail
-      };
-      
-      // Send to the dedicated endpoint
-      fetch('/api/update-fp-referral', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(referralData)
-      })
-      .then(response => response.json())
-      .then(result => {
-        console.log('FP update result:', result);
-        if (result.success) {
-          console.log('FP fields updated successfully');
-        } else {
-          console.error('Error updating FP fields:', result.message);
-        }
-      })
-      .catch(error => {
-        console.error('Error updating FP fields:', error);
-      });
-    }
-  }, 500);
+  // Let the form submit normally - don't prevent default
+  // Don't add any fetch calls or other processing
 });
+
 
 // Function to populate referral fields when Fence/Painting section is loaded
 function populateReferralFieldsWhenLoaded(data) {
@@ -5374,63 +5316,6 @@ function populateReferralFieldsWhenLoaded(data) {
         console.error('Error populating referral fields:', error);
     }
 }
-
-// MutationObserver to watch for changes in the DOM
-const observer = new MutationObserver((mutationsList, observer) => {
-    for (const mutation of mutationsList) {
-        if (mutation.type === 'childList') {
-            const fencePaintingSection = document.getElementById('fencingPaintingSection');
-            if (fencePaintingSection && fencePaintingSection.style.display !== 'none') {
-                console.log('Fence/Painting section loaded, populating referral fields');
-                
-                // Wait a short moment for all elements to be fully rendered
-                setTimeout(() => {
-                    // Get the data from the hidden field instead of searchResults
-                    const recordDataField = document.getElementById('currentRecordData');
-                    if (recordDataField && recordDataField.value) {
-                        try {
-                            const data = JSON.parse(recordDataField.value);
-                            console.log('Record data from hidden field:', data);
-                            
-                            // Populate the referral fields directly
-                            const setFieldValue = (id, value) => {
-                                const element = document.getElementById(id);
-                                if (element) {
-                                    element.value = value || '';
-                                    console.log(`Set value for ${id}: ${value}`);
-                                } else {
-                                    console.warn(`Element with ID ${id} not found`);
-                                }
-                            };
-                            
-                            setFieldValue('fpFirstName', data.fpFirstName);
-                            setFieldValue('fpLastName', data.fpLastName);
-                            setFieldValue('fpPhoneNumber', data.fpPhoneNumber);
-                            setFieldValue('fpEmail', data.fpEmail);
-                            
-                            console.log('Successfully populated referral fields from hidden field data');
-                        } catch (error) {
-                            console.error('Error parsing record data:', error);
-                        }
-                    } else {
-                        console.error('currentRecordData field not available or empty');
-                    }
-                }, 100);
-                
-                break;
-            }
-        }
-    }
-});
-
-// Start observing the body for added nodes
-observer.observe(document.body, { childList: true, subtree: true });
-
-// Start observing the body for added nodes
-observer.observe(document.body, { childList: true, subtree: true });
-
-// Start observing the body for added nodes
-observer.observe(document.body, { childList: true, subtree: true });
 
     </script>
 

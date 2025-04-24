@@ -666,7 +666,11 @@ app.post('/api/client', (req, res) => {
                         paintingOwnerStatus = ?,
                         paintingDate = ?,
                         paintingWarrantyExp = ?,
-                        paintingSalesRep = ?,                        
+                        paintingSalesRep = ?,  
+                        fpFirstName = ?,
+                        fpLastName = ?,
+                        fpPhoneNumber = ?,
+                        fpEmail = ?,                      
                         updatedAt = CURRENT_TIMESTAMP
                     WHERE rowid = ?
                 `;
@@ -731,6 +735,10 @@ app.post('/api/client', (req, res) => {
                     data.paintingDate,
                     data.paintingWarrantyExp,
                     data.paintingSalesRep,
+                    data.fpFirstName,
+                    data.fpLastName,
+                    data.fpPhoneNumber,
+                    data.fpEmail,
                     data.recordId                    
                 ];
 
