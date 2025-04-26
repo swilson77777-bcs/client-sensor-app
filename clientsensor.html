@@ -2040,8 +2040,13 @@ function hideComingSoonMessage() {
     // Reset all input fields in the form
     const form = document.getElementById('clientForm');
     form.reset();
-    document.getElementById('deleteRecordBtn').style.display = 'none';
-    document.getElementById('deleteRecordBtn2').style.display = 'none'; 
+    const deleteBtn = document.getElementById('deleteRecordBtn');
+    const deleteBtn2 = document.getElementById('deleteRecordBtn2');
+    const fpDeleteBtn = document.getElementById('fpDeleteRecord');
+
+    if (deleteBtn) deleteBtn.style.display = 'none';
+    if (deleteBtn2) deleteBtn2.style.display = 'none';
+    if (fpDeleteBtn) fpDeleteBtn.style.display = 'none'; 
 
      // Explicitly clear the recordId field
     document.getElementById('recordId').value = '';
@@ -2090,8 +2095,13 @@ function hideComingSoonMessage() {
     input.value = value;
 }
  // Hide delete buttons when creating a new record
-    document.getElementById('deleteRecordBtn').style.display = 'none';
-    document.getElementById('deleteRecordBtn2').style.display = 'none';
+    const deleteBtn = document.getElementById('deleteRecordBtn');
+    const deleteBtn2 = document.getElementById('deleteRecordBtn2');
+    const fpDeleteBtn = document.getElementById('fpDeleteRecord');
+
+    if (deleteBtn) deleteBtn.style.display = 'none';
+    if (deleteBtn2) deleteBtn2.style.display = 'none';
+    if (fpDeleteBtn) fpDeleteBtn.style.display = 'none';
 // Add event listeners to both phone inputs
 document.getElementById('phoneNumber').addEventListener('input', function(e) {
     formatPhoneNumber(this);
@@ -2928,7 +2938,17 @@ async function deleteRecord() {
         document.getElementById('prevButton').disabled = true;
         document.getElementById('nextButton').disabled = true;
         prepareNextUser();
-        document.getElementById('deleteRecordBtn').style.display = 'none';
+        const deleteBtn = document.getElementById('deleteRecordBtn');
+        const deleteBtn2 = document.getElementById('deleteRecordBtn2');
+        const fpDeleteBtn = document.getElementById('fpDeleteRecord');
+
+        if (deleteBtn) deleteBtn.style.display = 'none';
+        if (deleteBtn2) deleteBtn2.style.display = 'none';
+        if (fpDeleteBtn) fpDeleteBtn.style.display = 'none';
+
+
+
+
     } catch (error) {
         showNotification('Error: ' + error.message, 'error');
         console.error('Delete error:', error);
@@ -2956,8 +2976,13 @@ function displayCurrentRecord() {
     }
 
     // Show delete buttons when displaying a record
-    document.getElementById('deleteRecordBtn').style.display = 'inline-block';
-    document.getElementById('deleteRecordBtn2').style.display = 'inline-block';
+    const deleteBtn = document.getElementById('deleteRecordBtn');
+    const deleteBtn2 = document.getElementById('deleteRecordBtn2');
+    const fpDeleteBtn = document.getElementById('fpDeleteRecord');
+
+    if (deleteBtn) deleteBtn.style.display = 'inline-block';
+    if (deleteBtn2) deleteBtn2.style.display = 'inline-block';
+    if (fpDeleteBtn) fpDeleteBtn.style.display = 'inline-block';
 
     // Store the record ID for update operations
     document.getElementById('recordId').value = data.rowid || '';
@@ -3492,8 +3517,23 @@ function resetSearchCriteria() {
     document.getElementById('nextButton').disabled = true;
 
     // Hide delete buttons
-    document.getElementById('deleteRecordBtn').style.display = 'none';
-    document.getElementById('deleteRecordBtn2').style.display = 'none';
+    const deleteBtn = document.getElementById('deleteRecordBtn');
+    const deleteBtn2 = document.getElementById('deleteRecordBtn2');
+    const fpDeleteBtn = document.getElementById('fpDeleteRecord');
+
+    if (deleteBtn) deleteBtn.style.display = 'none';
+    if (deleteBtn2) deleteBtn2.style.display = 'none';
+    if (fpDeleteBtn) fpDeleteBtn.style.display = 'none';
+
+    // For the fence/painting delete button, set a flag if it's not visible yet
+    if (fpDeleteBtn) {
+      fpDeleteBtn.style.display = 'inline-block';
+    } else {
+    // Store the state in a global variable or localStorage
+  window.fpDeleteButtonShouldBeVisible = true;
+  }
+
+
     }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -4258,6 +4298,7 @@ function saveViewSettings() {
 
 function goToSearch() {
   closeViewDownloadModal();
+  closeFpViewDownloadModal();
   // Scroll to search section
   document.querySelector('.search-section').scrollIntoView({ behavior: 'smooth' });
 }
@@ -4912,6 +4953,14 @@ fetch('/fencePaintingSection.html')
     // Make the section visible
     document.getElementById('fencingPaintingSection').style.display = 'block';
     
+    // Check if the delete button should be visible based on search results
+    if (searchResults && searchResults.length > 0 && currentResultIndex >= 0) {
+      const fpDeleteBtn = document.getElementById('fpDeleteRecord');
+      if (fpDeleteBtn) {
+        fpDeleteBtn.style.display = 'inline-block';
+      }
+    }
+    
     // Add this to verify elements are properly loaded
     console.log('Fence/Painting section loaded:');
     console.log('fenceType element:', document.getElementById('fenceType'));
@@ -4940,6 +4989,12 @@ fetch('/fencePaintingSection.html')
       // If we have a current record loaded, populate the fence/painting fields
       if (searchResults && searchResults.length > 0 && currentResultIndex >= 0) {
         const data = searchResults[currentResultIndex];
+        
+        // Check again for the delete button and make it visible if needed
+        const fpDeleteBtn = document.getElementById('fpDeleteRecord');
+        if (fpDeleteBtn) {
+          fpDeleteBtn.style.display = 'inline-block';
+        }
         
         // Populate fence fields
         const setFieldValue = (id, value) => {

@@ -236,8 +236,10 @@
             <div id="fpPreviousNotes" style="background-color: #ffebee; padding: 10px; border-radius: 4px; min-height: 40px; margin-bottom: 10px;"></div>
             
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button id="fpSubmit" style="padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Submit</button>
-                <button id="fpNewRecord" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">New Record</button>
+                <button id="fpSubmit" onclick="document.getElementById('clientForm').dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));" style="padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Submit</button>
+
+                <button id="fpNewRecord" onclick="prepareNextUser()" style="padding: 10px 20px; background-color: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">New Record</button>
+                <button id="fpDeleteRecord" onclick="deleteRecord()" style="padding: 10px 20px; background-color: #FF0000; color: white; border: none; border-radius: 4px; cursor: pointer; display: none;">Delete Record</button>
             </div>
         </div>
     </div>
@@ -247,9 +249,10 @@
         <h3 style="margin-top: 0; margin-bottom: 15px;">Documents/Images/Videos</h3>
         
         <div>
-            <button id="fpUpload" style="padding: 8px 20px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px;">Upload</button>
-            <button id="fpViewDownload" style="padding: 8px 20px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px;">View/Download</button>
-        </div>
+            <button id="fpUpload" onclick="openFpUploadModal()" style="padding: 8px 20px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px;">Upload</button>
+<button id="fpViewDownload" onclick="viewDownloadFpMedia()" style="padding: 8px 20px; background-color: #f8f9fa; border: 1px solid #ccc; border-radius: 4px;">View/Download</button>
+
+
         <div id="filesList"></div>
     </div>
     
@@ -310,77 +313,95 @@ inputField.addEventListener('input', function() {
     const fpPhoneNumberInput = document.getElementById('fpPhoneNumber');
     const fpEmailInput = document.getElementById('fpEmail');
     
+    loadFpNotes();
     
-    
-    
-    // Submit button functionality
-    const submitBtn = document.getElementById('fpSubmit');
-if (submitBtn) {
-    submitBtn.addEventListener('click', function(event) {
-        // Prevent default form submission behavior
-        event.preventDefault();
-        
-        // Get the current record ID
-        const recordId = document.getElementById('recordId').value;
-        
-        if (!recordId) {
-            showNotification('No record selected. Please search for a record first.', 'error');
-            return false;
-        }
-        
-        // Get ALL field values using the same function that gets the painting fields
-        const allData = getFencePaintingData();
-        
-        console.log('Sending all fence/painting data:', allData);
-
-         // Log the data being sent (for debugging)
-            console.log('Sending data with fp fields:', {
-            fpFirstName: allData.fpFirstName,
-            fpLastName: allData.fpLastName,
-            fpPhoneNumber: allData.fpPhoneNumber,
-            fpEmail: allData.fpEmail
-         });
-        
-        // Send to the main API endpoint
-        fetch('/api/client', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                recordId: recordId,
-                username: document.getElementById('username')?.value || '',
-                firstName: document.getElementById('firstName')?.value || '',
-                lastName: document.getElementById('lastName')?.value || '',
-                streetAddress: document.getElementById('streetAddress')?.value || '',
-                city: document.getElementById('city')?.value || '',
-                state: document.getElementById('state')?.value || '',
-                zipCode: document.getElementById('zipCode')?.value || '',
-                phoneNumber: document.getElementById('phoneNumber')?.value || '',
-                email: document.getElementById('email')?.value || '',
-                customerNumber: document.getElementById('customerNumber')?.value || '',
-                customerurl: document.getElementById('customerurl')?.value || '',
-                ...allData
-            })
-        })
-        .then(response => response.json())
-        .then(result => {
-            console.log('Update result:', result);
-            if (result.message) {
-                showNotification('Data saved successfully', 'success');
-            } else {
-                showNotification('Error saving data: ' + (result.error || 'Unknown error'), 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error saving data:', error);
-            showNotification('Error saving data', 'error');
-        });
-        
-        return false;
+    // Add media upload and view/download buttons event listeners
+const fpUploadBtn = document.getElementById('fpUpload');
+if (fpUploadBtn) {
+    console.log('Found Upload button:', fpUploadBtn);
+    fpUploadBtn.addEventListener('click', function() {
+        console.log('Upload button clicked');
+        openFpUploadModal();
     });
 }
 
+const fpViewDownloadBtn = document.getElementById('fpViewDownload');
+if (fpViewDownloadBtn) {
+    console.log('Found View/Download button:', fpViewDownloadBtn);
+    fpViewDownloadBtn.addEventListener('click', function() {
+        console.log('View/Download button clicked');
+        viewDownloadFpMedia();
+    });
+}
+    
+    // Submit button functionality
+    const submitBtn = document.getElementById('fpSubmit');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function(event) {
+            // Prevent default form submission behavior
+            event.preventDefault();
+            
+            // Get the current record ID
+            const recordId = document.getElementById('recordId').value;
+            
+            if (!recordId) {
+                showNotification('No record selected. Please search for a record first.', 'error');
+                return false;
+            }
+            
+            // Get ALL field values using the same function that gets the painting fields
+            const allData = getFencePaintingData();
+            
+            console.log('Sending all fence/painting data:', allData);
+
+            // Log the data being sent (for debugging)
+            console.log('Sending data with fp fields:', {
+                fpFirstName: allData.fpFirstName,
+                fpLastName: allData.fpLastName,
+                fpPhoneNumber: allData.fpPhoneNumber,
+                fpEmail: allData.fpEmail
+            });
+            
+            // Send to the main API endpoint
+            fetch('/api/client', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    recordId: recordId,
+                    username: document.getElementById('username')?.value || '',
+                    firstName: document.getElementById('firstName')?.value || '',
+                    lastName: document.getElementById('lastName')?.value || '',
+                    streetAddress: document.getElementById('streetAddress')?.value || '',
+                    city: document.getElementById('city')?.value || '',
+                    state: document.getElementById('state')?.value || '',
+                    zipCode: document.getElementById('zipCode')?.value || '',
+                    phoneNumber: document.getElementById('phoneNumber')?.value || '',
+                    email: document.getElementById('email')?.value || '',
+                    customerNumber: document.getElementById('customerNumber')?.value || '',
+                    customerurl: document.getElementById('customerurl')?.value || '',
+                    ...allData
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Update result:', result);
+                if (result.message) {
+                    showNotification('Data saved successfully', 'success');
+                    loadFpNotes();
+                } else {
+                    showNotification('Error saving data: ' + (result.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving data:', error);
+                showNotification('Error saving data', 'error');
+            });
+            
+            return false;
+        });
+    }
     
     // New Record button functionality
     const newRecordBtn = document.getElementById('fpNewRecord');
@@ -480,65 +501,14 @@ if (submitBtn) {
         });
     }
     
-    // View/Download button functionality
-    const viewDownloadBtn = document.getElementById('fpViewDownload');
-    if (viewDownloadBtn) {
-        viewDownloadBtn.addEventListener('click', function() {
-            // In a real application, this would show a list of uploaded files
-            if (document.getElementById('filesList').children.length === 0) {
-                showNotification('No files have been uploaded yet', 'info');
-            } else {
-                showNotification('Viewing uploaded files', 'success');
-            }
-        });
-    }
-    
-    // Set up file upload button
-    const uploadBtn = document.getElementById('fpUpload');
-    if (uploadBtn) {
-        uploadBtn.addEventListener('click', function() {
-            // Create a file input element if it doesn't exist
-            let fileUpload = document.getElementById('fileUpload');
-            if (!fileUpload) {
-                fileUpload = document.createElement('input');
-                fileUpload.type = 'file';
-                fileUpload.id = 'fileUpload';
-                fileUpload.style.display = 'none';
-                fileUpload.multiple = true;
-                document.body.appendChild(fileUpload);
-                
-                fileUpload.addEventListener('change', function() {
-                    uploadFiles();
-                });
-            }
-            
-            // Trigger the file input click
-            fileUpload.click();
-        });
-    }
-    
-    // Set up existing file upload input if it exists
-    const fileUpload = document.getElementById('fileUpload');
-    if (fileUpload) {
-        fileUpload.addEventListener('change', function() {
-            uploadFiles();
-        });
-    }
-    
     // Add event listener for the Add Note button if it exists
     const addNoteBtn = document.getElementById('fpAddNote');
     if (addNoteBtn) {
         addNoteBtn.addEventListener('click', function() {
-            addNote();
+            addFpNote();
         });
     }
 }
-
-
-
-        
-    
-
 
 
 
@@ -595,34 +565,133 @@ if (submitBtn) {
     }
     
     // Add a note to the notes list
-    function addNote() {
-        const notesTextarea = document.getElementById('fpNotes');
-        const notesList = document.getElementById('fpPreviousNotes');
-        
-        if (notesTextarea.value.trim() === '') {
-            showNotification('Please enter a note', 'error');
-            return;
-        }
-        
-        const now = new Date();
-        const dateString = now.toLocaleDateString();
-        const timeString = now.toLocaleTimeString();
-        
-        const noteDiv = document.createElement('div');
-        noteDiv.style.padding = '10px';
-        noteDiv.style.marginBottom = '10px';
-        noteDiv.style.backgroundColor = '#f8f9fa';
-        noteDiv.style.borderRadius = '5px';
-        noteDiv.style.border = '1px solid #dee2e6';
-        
-        noteDiv.innerHTML = `
-            <div style="font-weight: bold;">${dateString} ${timeString}</div>
-            <div>${notesTextarea.value}</div>
-        `;
-        
-        notesList.appendChild(noteDiv);
-        notesTextarea.value = '';
+
+    // Add a note to the notes list
+function addFpNote() {
+    const notesTextarea = document.getElementById('fpNotes');
+    const notesList = document.getElementById('fpPreviousNotes');
+    
+    if (!notesTextarea.value.trim()) {
+        showNotification('Please enter a note', 'error');
+        return;
     }
+    
+    // Get the current record data
+    const recordId = document.getElementById('recordId').value;
+    const streetAddress = document.getElementById('streetAddress').value;
+    const customerNumber = document.getElementById('customerNumber').value;
+    
+    if (!streetAddress || !customerNumber) {
+        showNotification('No client record selected', 'error');
+        return;
+    }
+    
+    const now = new Date();
+    const timestamp = now.toISOString();
+    const username = document.getElementById('loggedInUser') ? document.getElementById('loggedInUser').textContent : 'Unknown User';
+    
+    // Create note data
+    const noteData = {
+        fpStreetAddress: streetAddress,
+        fpNote: notesTextarea.value,
+        fpTimestamp: timestamp,
+        fpAuthor: username,
+        fpCreatedAt: timestamp,
+        fpCustomerNumber: customerNumber
+    };
+    
+    // Send note to server
+    fetch('/api/fp-notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(noteData)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.message) {
+            // Add note to the UI
+            const noteDiv = document.createElement('div');
+            noteDiv.style.padding = '10px';
+            noteDiv.style.marginBottom = '10px';
+            noteDiv.style.backgroundColor = '#f8f9fa';
+            noteDiv.style.borderRadius = '5px';
+            noteDiv.style.border = '1px solid #dee2e6';
+            
+            noteDiv.innerHTML = `
+                <div style="border-bottom: 1px solid #eee; padding: 5px;">
+    <strong>${now.toLocaleString()}</strong><br>
+    ${notesTextarea.value}
+</div>
+`;
+            
+            notesList.insertBefore(noteDiv, notesList.firstChild);
+            notesTextarea.value = '';
+            
+            showNotification('Note saved successfully', 'success');
+        } else {
+            showNotification('Error saving note: ' + (result.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving note:', error);
+        showNotification('Error saving note', 'error');
+    });
+}
+
+
+    // Load notes for the current address
+function loadFpNotes() {
+    const streetAddress = document.getElementById('streetAddress').value;
+    const notesList = document.getElementById('fpPreviousNotes');
+    
+    if (!streetAddress) {
+        console.log('No street address available to load notes');
+        return;
+    }
+    
+    console.log('Loading FP notes for address:', streetAddress);
+    
+    // Clear existing notes
+    notesList.innerHTML = '';
+    
+    // Fetch notes from server
+    fetch(`/api/fp-notes/${encodeURIComponent(streetAddress)}`)
+        .then(response => response.json())
+        .then(notes => {
+            if (notes.length === 0) {
+                notesList.innerHTML = '<div style="padding: 10px; color: #666;">No notes found for this address.</div>';
+                return;
+            }
+            
+            // Add each note to the UI
+            notes.forEach(note => {
+                const noteDate = new Date(note.fpTimestamp);
+                const noteDiv = document.createElement('div');
+                noteDiv.style.padding = '10px';
+                noteDiv.style.marginBottom = '10px';
+                noteDiv.style.backgroundColor = '#f8f9fa';
+                noteDiv.style.borderRadius = '5px';
+                noteDiv.style.border = '1px solid #dee2e6';
+                
+                noteDiv.innerHTML = `
+                    <div style="border-bottom: 1px solid #eee; padding: 5px;">
+                    <strong>${new Date(note.fpTimestamp).toLocaleString()}</strong><br>
+                    ${note.fpNote}
+                </div>
+
+                `;
+                
+                notesList.appendChild(noteDiv);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading notes:', error);
+            notesList.innerHTML = '<div style="padding: 10px; color: red;">Error loading notes. Please try again.</div>';
+        });
+}
+
     
     // Upload files
     function uploadFiles() {
@@ -847,6 +916,8 @@ window.getFencePaintingData = getFencePaintingData;
       setFieldValue('fpLastName', data.fpLastName);
       setFieldValue('fpPhoneNumber', data.fpPhoneNumber);
       setFieldValue('fpEmail', data.fpEmail);
+
+      loadFpNotes();
       console.log('FP First Name after setting:', document.getElementById('fpFirstName'));
       console.log('FP Last Name after setting:', document.getElementById('fpLastName'));
 
@@ -894,6 +965,717 @@ function setSelectValue(selectElement, value) {
     window.setFencePaintingData = setFencePaintingData;
 
     // Add event listener for the Add Note button
-    document.getElementById('fpAddNote').addEventListener('click', addNote);
+    document.getElementById('fpAddNote').addEventListener('click', addFpNote);
+
+// Current customer media data
+let fpCurrentCustomerMedia = {
+  docs: [],
+  images: [],
+  videos: []
+};
+
+// Open the upload modal
+function openFpUploadModal() {
+  console.log('Testing upload click');
+  resetFpUploadForm();
+  document.getElementById('fpUploadModal').style.display = 'flex';
+}
+
+// Close the upload modal
+function closeFpUploadModal() {
+  document.getElementById('fpUploadModal').style.display = 'none';
+}
+
+// Reset the upload form
+function resetFpUploadForm() {
+  document.getElementById('fpFileInput').value = '';
+  document.getElementById('fpTopicSelect').value = '';
+  document.getElementById('fpMediaTypeSelect').value = '';
+  document.getElementById('fpMediaDescription').value = '';
+  document.getElementById('fpCustomerViewCheck').checked = false;
+  document.getElementById('fpInternalViewCheck').checked = true;
+  document.getElementById('fpUploadStatus').style.display = 'none';
+}
+
+// Submit the upload form
+function submitFpUpload() {
+  // Get form values
+  const fileInput = document.getElementById('fpFileInput');
+  const topic = document.getElementById('fpTopicSelect').value;
+  const mediaType = document.getElementById('fpMediaTypeSelect').value;
+  const description = document.getElementById('fpMediaDescription').value;
+  const customerView = document.getElementById('fpCustomerViewCheck').checked ? 1 : 0;
+  const internalView = document.getElementById('fpInternalViewCheck').checked ? 1 : 0;
+  
+  // Validate inputs
+  if (!fileInput.files || fileInput.files.length === 0) {
+    showFpUploadStatus('Please select a file to upload', 'error');
+    return;
+  }
+  
+  if (!topic) {
+    showFpUploadStatus('Please select a topic (Fence or Paint)', 'error');
+    return;
+  }
+  
+  if (!mediaType) {
+    showFpUploadStatus('Please select a media type (Document, Image, or Video)', 'error');
+    return;
+  }
+  
+  // Create FormData object for file upload
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  formData.append('topic', topic);
+  formData.append('mediaType', mediaType);
+  formData.append('description', description);
+  formData.append('customerView', customerView);
+  formData.append('internalView', internalView);
+  formData.append('customerNumber', document.getElementById('customerNumber').value);
+  
+  // Show uploading status
+  showFpUploadStatus('Uploading, please wait...', 'info');
+  
+  // Send the upload request
+  fetch('/api/fp-upload-media', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showFpUploadStatus('File uploaded successfully!', 'success');
+      // Reset form after successful upload
+      // resetFpUploadForm(); // Uncomment if you want to reset the form after upload
+    } else {
+      showFpUploadStatus(`Error: ${data.error}`, 'error');
+    }
+  })
+  .catch(error => {
+    showFpUploadStatus(`Upload failed: ${error.message}`, 'error');
+  });
+}
+
+// Show upload status message
+function showFpUploadStatus(message, type) {
+  const statusElement = document.getElementById('fpUploadStatus');
+  statusElement.textContent = message;
+  statusElement.style.display = 'block';
+  
+  // Reset all styles
+  statusElement.style.backgroundColor = '';
+  statusElement.style.color = '';
+  statusElement.style.padding = '10px';
+  statusElement.style.borderRadius = '4px';
+  statusElement.style.marginTop = '15px';
+  statusElement.style.marginBottom = '15px';
+  
+  // Set color based on message type
+  if (type === 'error') {
+    statusElement.style.backgroundColor = '#f8d7da';
+    statusElement.style.color = '#721c24';
+  } else if (type === 'success') {
+    statusElement.style.backgroundColor = '#e8f5e9';
+    statusElement.style.color = '#155724';
+  } else {
+    statusElement.style.backgroundColor = '#f8f9fa';
+    statusElement.style.color = '#0c5460';
+  }
+}
+
+// Open the view/download modal
+function viewDownloadFpMedia() {
+  const customerNumber = document.getElementById('customerNumber').value;
+  if (!customerNumber) {
+    showNotification('Please enter a customer number', 'error');
+    return;
+  }
+  
+  // Helper function to safely set checkbox state
+  const safeSetChecked = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) element.checked = value === true || value === 1 || value === '1';
+  };
+  
+  // Reset filters to checked state
+  safeSetChecked('fpFilterDocs', true);
+  safeSetChecked('fpFilterImages', true);
+  safeSetChecked('fpFilterVideos', true);
+  safeSetChecked('fpFilterFence', true);
+  safeSetChecked('fpFilterPaint', true);
+  
+  // Clear previous data
+  document.getElementById('fpDocumentsList').innerHTML = '<p class="loading-message">Loading documents...</p>';
+  document.getElementById('fpImagesList').innerHTML = '<p class="loading-message">Loading images...</p>';
+  document.getElementById('fpVideosList').innerHTML = '<p class="loading-message">Loading videos...</p>';
+  
+  // Show the modal
+  document.getElementById('fpViewDownloadModal').style.display = 'flex';
+  
+  // Try to get customer info from existing data
+  const firstName = document.getElementById('firstName')?.value || '';
+  const lastName = document.getElementById('lastName')?.value || '';
+  
+  // Update the modal header with customer info
+  const modalHeader = document.querySelector('#fpViewDownloadModal h3');
+  if (modalHeader) {
+    if (firstName && lastName) {
+      modalHeader.innerHTML = `Fence/Painting Media Files <span style="font-weight: normal;">(${firstName} ${lastName}, Customer# ${customerNumber})</span>`;
+    } else {
+      modalHeader.innerHTML = `Fence/Painting Media Files <span style="font-weight: normal;">(Customer# - ${customerNumber})</span>`;
+    }
+  }
+  
+  // Fetch customer media
+  fetchFpCustomerMedia(customerNumber);
+}
+
+// Close the view/download modal
+function closeFpViewDownloadModal() {
+  document.getElementById('fpViewDownloadModal').style.display = 'none';
+}
+
+// Fetch customer media files
+function fetchFpCustomerMedia(customerNumber) {
+  console.log('Fetching FP media for customer:', customerNumber);
+  
+  // Validate customer number
+  if (!customerNumber) {
+    showNotification('Customer number is required', 'error');
+    return;
+  }
+  
+  // Clear previous data
+  fpCurrentCustomerMedia = {
+    docs: [],
+    images: [],
+    videos: []
+  };
+  
+  // Set loading indicators
+  document.getElementById('fpDocumentsList').innerHTML = '<p class="no-items-message">Loading documents...</p>';
+  document.getElementById('fpImagesList').innerHTML = '<p class="no-items-message">Loading images...</p>';
+  document.getElementById('fpVideosList').innerHTML = '<p class="no-items-message">Loading videos...</p>';
+  
+  // Fetch documents
+  fetch(`/api/fp-customer-docs/${customerNumber}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      fpCurrentCustomerMedia.docs = data.docs || [];
+      displayFpMediaItems('docs');
+    })
+    .catch(error => {
+      console.error('Error fetching FP documents:', error);
+      document.getElementById('fpDocumentsList').innerHTML = 
+        `<p class="no-items-message">Error loading documents: ${error.message}</p>`;
+    });
+  
+  // Fetch images
+  fetch(`/api/fp-customer-images/${customerNumber}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      fpCurrentCustomerMedia.images = data.images || [];
+      displayFpMediaItems('images');
+    })
+    .catch(error => {
+      console.error('Error fetching FP images:', error);
+      document.getElementById('fpImagesList').innerHTML = 
+        `<p class="no-items-message">Error loading images: ${error.message}</p>`;
+    });
+  
+  // Fetch videos
+  fetch(`/api/fp-customer-videos/${customerNumber}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      fpCurrentCustomerMedia.videos = data.videos || [];
+      displayFpMediaItems('videos');
+    })
+    .catch(error => {
+      console.error('Error fetching FP videos:', error);
+      document.getElementById('fpVideosList').innerHTML = 
+        `<p class="no-items-message">Error loading videos: ${error.message}</p>`;
+    });
+}
+
+// Display media items
+function displayFpMediaItems(mediaType) {
+  const items = fpCurrentCustomerMedia[mediaType];
+  const containerId = mediaType === 'docs' ? 'fpDocumentsList' : 
+                      mediaType === 'images' ? 'fpImagesList' : 'fpVideosList';
+  const container = document.getElementById(containerId);
+  const customerNumber = document.getElementById('customerNumber').value;
+  
+  if (!items || items.length === 0) {
+    container.innerHTML = `<p class="no-items-message">No ${mediaType} found</p>`;
+    return;
+  }
+
+  // Group items by category
+  const groupedItems = {
+    Fence: [],
+    Paint: []
+  };
+
+  items.forEach(item => {
+    if (groupedItems[item.category]) {
+      groupedItems[item.category].push(item);
+    }
+  });
+
+  let html = '';
+  
+  // Create containers for each category
+  for (const [category, categoryItems] of Object.entries(groupedItems)) {
+    if (categoryItems.length === 0) continue;
+
+    html += `
+      <div class="media-category-container" style="margin-bottom: 30px; border: 2px solid black; padding: 10px;">
+        <h4 class="media-type-title" style="background-color: #b3e0e5; border-bottom: 4px solid #000; padding-bottom: 5px;">
+          ${category} ${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)}
+        </h4>
+    `;
+
+    categoryItems.forEach(item => {
+      // Convert mediaType to server-expected format
+      const serverMediaType = 
+        mediaType === 'docs' ? 'Document' : 
+        mediaType === 'images' ? 'Image' : 
+        mediaType === 'videos' ? 'Video' : mediaType;
+
+      // Add data-type and data-category attributes for filtering
+      html += `
+        <div class="media-item" style="margin: 10px 0; padding: 10px; border: 1px solid #eee;" 
+             data-category="${item.category}" data-type="${mediaType === 'docs' ? 'doc' : mediaType.slice(0, -1)}">
+          <div style="font-weight: bold;">${item.filename}</div>
+          <div style="color: #666; font-size: 0.9em;">${item.description}</div>
+          <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <button onclick="downloadFpMedia('${serverMediaType}', '${item.category}', '${customerNumber}')" 
+                      class="btn btn-primary btn-sm">
+                Download
+              </button>
+              <button onclick="deleteFpMedia('${serverMediaType}', '${item.category}', '${customerNumber}', '${item.filename}')" 
+                      class="btn btn-danger btn-sm">
+                Delete
+              </button>
+            </div>
+            <div class="view-settings" style="display: flex; gap: 10px; align-items: center; background-color: #f8f9fa; padding: 5px 10px; border-radius: 4px;">
+              <label style="margin-bottom: 0; display: flex; align-items: center; font-size: 0.9em; cursor: pointer;">
+                <input type="checkbox" ${item.customerView == "1" ? 'checked' : ''} 
+                       onchange="updateFpFileViewSetting('${serverMediaType}', '${item.category}', '${item.id}', 'customer', this.checked, '${item.filename}')" 
+                       style="margin-right: 5px;">
+                Customer View
+              </label>
+              <label style="margin-bottom: 0; display: flex; align-items: center; font-size: 0.9em; cursor: pointer;">
+                <input type="checkbox" ${item.internalView == "1" ? 'checked' : ''} 
+                       onchange="updateFpFileViewSetting('${serverMediaType}', '${item.category}', '${item.id}', 'internal', this.checked, '${item.filename}')" 
+                       style="margin-right: 5px;">
+                Internal View
+              </label>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`; // Close media-category-container
+  }
+  
+  container.innerHTML = html || `<p class="no-items-message">No ${mediaType} found in any category</p>`;
+}
+
+// Download media file
+function downloadFpMedia(mediaType, category, customerNumber) {
+  // Validate mediaType casing (Document/Image/Video)
+  const normalizedMediaType = mediaType === 'docs' ? 'Document' : 
+                             mediaType === 'images' ? 'Image' :
+                             mediaType === 'videos' ? 'Video' : mediaType;
+
+  // Encode category to handle spaces/special characters
+  const encodedCategory = encodeURIComponent(category);
+  
+  console.log(`Downloading FP: type=${mediaType}, category=${category}, customer=${customerNumber}`);
+  const url = `/api/fp-download-media/${normalizedMediaType}/${encodedCategory}/${customerNumber}`;
+  console.log('Download URL:', url);
+  window.open(url, '_blank');
+}
+
+// Update file view setting
+function updateFpFileViewSetting(mediaType, category, fileId, viewType, isChecked, filename) {
+  const customerNumber = document.getElementById('customerNumber').value;
+  if (!customerNumber) {
+    showNotification('Customer number is required', 'error');
+    return;
+  }
+
+  // Convert boolean to integer for database storage
+  const viewValue = isChecked ? 1 : 0;
+  
+  // Prepare the data for the API call
+  const updateData = {
+    mediaType,
+    category,
+    fileId,
+    customerNumber,
+    viewType, // 'customer' or 'internal'
+    value: viewValue,
+    filename // Add filename to identify the correct row
+  };
+  
+  // Send update to server
+  fetch('/api/fp-update-file-view', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(updateData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Update the local data to match the server
+      updateFpLocalMediaViewSetting(mediaType, category, fileId, viewType, viewValue);
+      showNotification(`${viewType.charAt(0).toUpperCase() + viewType.slice(1)} view setting updated`, 'success');
+    } else {
+      showNotification(`Error updating view setting: ${data.error}`, 'error');
+      // Revert the checkbox state
+      event.target.checked = !isChecked;
+    }
+  })
+  .catch(error => {
+    console.error('Error updating view setting:', error);
+    showNotification('Failed to update view setting', 'error');
+    // Revert the checkbox state
+    event.target.checked = !isChecked;
+  });
+}
+
+// Update local media view setting
+function updateFpLocalMediaViewSetting(mediaType, category, fileId, viewType, value) {
+  const mediaTypeKey = mediaType === 'Document' ? 'docs' : 
+                      mediaType === 'Image' ? 'images' : 'videos';
+  
+  if (fpCurrentCustomerMedia[mediaTypeKey]) {
+    fpCurrentCustomerMedia[mediaTypeKey].forEach(item => {
+      if (item.id === fileId && item.category === category) {
+        if (viewType === 'customer') {
+          item.customerView = value;
+        } else if (viewType === 'internal') {
+          item.internalView = value;
+        }
+      }
+    });
+  }
+}
+
+// Apply media filters
+function applyFpMediaFilters() {
+  console.log("Applying FP media filters...");
+  
+  // Get Type filter values
+  const showDocs = document.getElementById('fpFilterDocs').checked;
+  const showImages = document.getElementById('fpFilterImages').checked;
+  const showVideos = document.getElementById('fpFilterVideos').checked;
+  
+  // Get Category filter values
+  const showFence = document.getElementById('fpFilterFence').checked;
+  const showPaint = document.getElementById('fpFilterPaint').checked;
+  
+  console.log("Filter settings:", { 
+    types: { docs: showDocs, images: showImages, videos: showVideos },
+    categories: { fence: showFence, paint: showPaint }
+  });
+  
+  // Show/hide the document sections based on type filters
+  document.getElementById('fpDocumentsSection').style.display = showDocs ? 'block' : 'none';
+  document.getElementById('fpImagesSection').style.display = showImages ? 'block' : 'none';
+  document.getElementById('fpVideosSection').style.display = showVideos ? 'block' : 'none';
+  
+  // Filter the actual media items by category
+  const allMediaItems = document.querySelectorAll('.media-item');
+  console.log(`Found ${allMediaItems.length} media items to filter`);
+  
+  allMediaItems.forEach(item => {
+    const category = item.getAttribute('data-category');
+    const mediaType = item.getAttribute('data-type');
+    
+    console.log(`Item: category=${category}, type=${mediaType}`);
+    
+    // Check if this item's type is selected
+    let typeSelected = false;
+    if (mediaType === 'doc' && showDocs) typeSelected = true;
+    if (mediaType === 'image' && showImages) typeSelected = true;
+    if (mediaType === 'video' && showVideos) typeSelected = true;
+    
+    // Check if this item's category is selected
+    let categorySelected = false;
+    if (category === 'Fence' && showFence) categorySelected = true;
+    if (category === 'Paint' && showPaint) categorySelected = true;
+    
+    // Show the item only if both type and category are selected
+    const shouldDisplay = (typeSelected && categorySelected);
+    console.log(`Should display ${category} ${mediaType}: ${shouldDisplay}`);
+    
+    // Find the parent container (media-category-container) and check if it has any visible items
+    const parentContainer = item.closest('.media-category-container');
+    item.style.display = shouldDisplay ? 'block' : 'none';
+    
+    // After hiding/showing items, check if the category container has any visible items
+    if (parentContainer) {
+      setTimeout(() => {
+        const visibleItems = parentContainer.querySelectorAll('.media-item[style*="display: block"]');
+        parentContainer.style.display = visibleItems.length > 0 ? 'block' : 'none';
+      }, 0);
+    }
+  });
+  
+  // Update the "no items" messages
+  updateFpNoItemsMessages();
+}
+
+// Update "no items" messages
+function updateFpNoItemsMessages() {
+  // For each section, check if there are any visible items
+  const sections = ['fpDocuments', 'fpImages', 'fpVideos'];
+  
+  sections.forEach(section => {
+    const container = document.getElementById(`${section}List`);
+    if (!container) return;
+    
+    const visibleItems = container.querySelectorAll('.media-item[style*="display: block"]');
+    const noItemsMessage = container.querySelector('.no-items-message');
+    
+    if (visibleItems.length === 0) {
+      // If no message exists, create one
+      if (!noItemsMessage) {
+        const message = document.createElement('p');
+        message.className = 'no-items-message';
+        message.textContent = `No ${section.replace('fp', '').toLowerCase()} found matching the selected filters`;
+        container.appendChild(message);
+      } else {
+        noItemsMessage.style.display = 'block';
+      }
+    } else if (noItemsMessage) {
+      noItemsMessage.style.display = 'none';
+    }
+  });
+}
+
+// Show confirmation dialog
+function showFpConfirmationDialog(message, onConfirm) {
+  const dialog = document.getElementById('fpConfirmationDialog');
+  const messageElement = document.getElementById('fpConfirmationMessage');
+  const yesButton = document.getElementById('fpConfirmYes');
+  const noButton = document.getElementById('fpConfirmNo');
+  
+  messageElement.textContent = message;
+  dialog.style.display = 'flex';
+  
+  // Remove any existing event listeners
+  const newYesButton = yesButton.cloneNode(true);
+  const newNoButton = noButton.cloneNode(true);
+  yesButton.parentNode.replaceChild(newYesButton, yesButton);
+  noButton.parentNode.replaceChild(newNoButton, noButton);
+  
+  // Add new event listeners
+  newYesButton.addEventListener('click', () => {
+    dialog.style.display = 'none';
+    onConfirm();
+  });
+  
+  newNoButton.addEventListener('click', () => {
+    dialog.style.display = 'none';
+  });
+}
+
+// Delete media file
+function deleteFpMedia(mediaType, category, customerNumber, filename) {
+  showFpConfirmationDialog(`Are you sure you want to delete this ${mediaType.toLowerCase()}?`, () => {
+    // This code runs only if user confirms
+    fetch(`/api/fp-delete-media/${mediaType}/${category}/${customerNumber}/${encodeURIComponent(filename)}`, {
+      method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showNotification(`${mediaType} deleted successfully`, 'success');
+        fetchFpCustomerMedia(customerNumber);
+      } else {
+        showNotification(`Error deleting ${mediaType}: ${data.error}`, 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showNotification(`Failed to delete ${mediaType}`, 'error');
+    });
+  });
+}
+
+
     </script>
+
+<!-- Media Upload Modal -->
+<div id="fpUploadModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content" style="width: 500px; max-width: 90%; text-align: center;">
+    <h3 style="margin-bottom: 20px;">Upload Media</h3>
+    
+    <form id="fpUploadForm" enctype="multipart/form-data">
+      <div style="margin-bottom: 15px; text-align: center;">
+        <label for="fpFileInput" style="display: block; margin-bottom: 5px;">Select File:</label>
+        <input type="file" id="fpFileInput" name="file" required style="margin: 0 auto;">
+      </div>
+      
+      <div style="margin-bottom: 15px; display: flex; justify-content: center; align-items: center;">
+        <label for="fpTopicSelect" style="width: 100px; text-align: right; margin-right: 10px;">Topic:</label>
+        <select id="fpTopicSelect" name="topic" required style="width: 200px; padding: 5px;">
+          <option value="">Select</option>
+          <option value="Fence">Fence</option>
+          <option value="Paint">Paint</option>
+        </select>
+      </div>
+      
+      <div style="margin-bottom: 15px; display: flex; justify-content: center; align-items: center;">
+        <label for="fpMediaTypeSelect" style="width: 100px; text-align: right; margin-right: 10px;">Media Type:</label>
+        <select id="fpMediaTypeSelect" name="mediaType" required style="width: 200px; padding: 5px;">
+          <option value="">Select</option>
+          <option value="Document">Document</option>
+          <option value="Image">Image</option>
+          <option value="Video">Video</option>
+        </select>
+      </div>
+      
+      <div style="margin-bottom: 15px; text-align: center;">
+        <label for="fpMediaDescription" style="display: block; margin-bottom: 5px;">Description:</label>
+        <textarea id="fpMediaDescription" name="description" style="width: 90%; height: 80px; padding: 5px;" placeholder="Enter a description for this file..."></textarea>
+      </div>
+      
+      <div style="margin-bottom: 15px; text-align: center;">
+        <label style="display: block; margin-bottom: 10px;">Viewing Options:</label>
+        <div style="display: flex; justify-content: center; gap: 50px;">
+          <div>
+            <input type="checkbox" id="fpCustomerViewCheck" name="customerView">
+            <label for="fpCustomerViewCheck">Customer</label>
+          </div>
+          <div>
+            <input type="checkbox" id="fpInternalViewCheck" name="internalView" checked>
+            <label for="fpInternalViewCheck">Internal Use</label>
+          </div>
+        </div>
+      </div>
+      
+      <div id="fpUploadStatus" style="margin: 15px 0; display: none;"></div>
+      
+      <div style="margin-top: 20px; text-align: right;">
+        <button type="button" class="btn" onclick="submitFpUpload()">Submit</button>
+        <button type="button" class="btn" onclick="resetFpUploadForm()">New Upload</button>
+        <button type="button" class="btn" onclick="closeFpUploadModal()">Finish</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Media View/Download Modal -->
+<div id="fpViewDownloadModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content" style="width: 80%; max-width: 900px; max-height: 80vh; overflow-y: auto;">
+    <span onclick="closeFpViewDownloadModal()" style="position: absolute; top: 10px; right: 20px; font-size: 24px; cursor: pointer; color: #aaa;">&times;</span>
+    <h3 style="text-align: center; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Fence/Painting Files</h3>
+    
+    <!-- Filter Section -->
+    <table style="width: 100%; background-color: #f5f5f5; border-collapse: collapse;">
+      <tr>
+        <td style="width: 80px; padding: 10px; font-weight: bold; vertical-align: middle;">Type:</td>
+        <td style="padding: 10px; text-align: center;">
+          <div>Docs</div>
+          <input type="checkbox" id="fpFilterDocs" checked>
+        </td>
+        <td style="padding: 10px; text-align: center;">
+          <div>Images</div>
+          <input type="checkbox" id="fpFilterImages" checked>
+        </td>
+        <td style="padding: 10px; text-align: center;">
+          <div>Videos</div>
+          <input type="checkbox" id="fpFilterVideos" checked>
+        </td>
+        <td style="padding: 10px; text-align: right;">
+          <button onclick="applyFpMediaFilters()" class="btn btn-primary">Apply Filters</button>
+        </td>
+      </tr>
+      <tr style="background-color: #eee;">
+        <td style="width: 80px; padding: 10px; font-weight: bold; vertical-align: middle;">Area:</td>
+        <td style="padding: 10px; text-align: center;">
+          <div>Fence</div>
+          <input type="checkbox" id="fpFilterFence" checked>
+        </td>
+        <td style="padding: 10px; text-align: center;">
+          <div>Paint</div>
+          <input type="checkbox" id="fpFilterPaint" checked>
+        </td>
+        <td colspan="2"></td>
+      </tr>
+    </table>
+    
+    <h4 style="margin-top: 20px; text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Documents</h4>
+    
+    <div id="fpMediaContent" style="display: flex; flex-direction: column; gap: 30px;">
+      <div id="fpDocumentsSection">
+        <div id="fpDocumentsList" style="margin-top: 15px;">
+          <p class="loading-message">Loading documents...</p>
+        </div>
+      </div>
+      
+      <div id="fpImagesSection">
+        <h4 style="border-bottom: 1px solid #ddd; padding-bottom: 5px; text-align: center;">Images</h4>
+        <div id="fpImagesList" style="margin-top: 15px;">
+          <p class="loading-message">Loading images...</p>
+        </div>
+      </div>
+      
+      <div id="fpVideosSection">
+        <h4 style="border-bottom: 1px solid #ddd; padding-bottom: 5px; text-align: center;">Videos</h4>
+        <div id="fpVideosList" style="margin-top: 15px;">
+          <p class="loading-message">Loading videos...</p>
+        </div>
+      </div>
+    </div>
+    
+    <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+  <button type="button" class="btn btn-primary" onclick="submitFpUpload()">Save</button>
+  <button onclick="goToSearch()" class="btn btn-info">Search</button>
+  <button type="button" class="btn" onclick="closeFpViewDownloadModal()">Finish</button>
+</div>
+
+  </div>
+</div>
+
+
+
+
+<!-- Confirmation Dialog -->
+<div id="fpConfirmationDialog" class="modal-overlay" style="display: none;">
+  <div class="modal-content" style="width: 400px; max-width: 90%;">
+    <h4>Confirm Action</h4>
+    <p id="fpConfirmationMessage" style="margin: 20px 0;"></p>
+    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+      <button type="button" class="btn" id="fpConfirmNo">No</button>
+      <button type="button" class="btn btn-danger" id="fpConfirmYes">Yes</button>
+    </div>
+  </div>
+</div>
+
+
 </div>

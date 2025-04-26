@@ -968,6 +968,8 @@ app.post('/api/notes', (req, res) => {
         });
 });
 
+
+
 // Handle media uploads
 // API endpoint to upload media
 // API endpoint to upload media
@@ -2504,6 +2506,583 @@ app.delete('/api/client/:id', (req, res) => {
             });
         });
     });
+});
+
+db.run(`CREATE TABLE IF NOT EXISTS fpNotesLog (
+    fpNoteId INTEGER PRIMARY KEY AUTOINCREMENT,
+    fpStreetAddress TEXT NOT NULL,
+    fpTimestamp TEXT NOT NULL,
+    fpNote TEXT NOT NULL,
+    fpAuthor TEXT,
+    fpCreatedAt TEXT,
+    fpCustomerNumber TEXT NOT NULL,
+    FOREIGN KEY (fpStreetAddress) REFERENCES ClientProfile(streetAddress),
+    FOREIGN KEY (fpCustomerNumber) REFERENCES ClientProfile(customerNumber)
+)`)
+
+// FP Notes endpoints
+app.post('/api/fp-notes', (req, res) => {
+    const { fpStreetAddress, fpNote, fpTimestamp, fpAuthor, fpCreatedAt, fpCustomerNumber } = req.body;
+    console.log('Adding FP note:', { fpStreetAddress, fpNote, fpTimestamp, fpCustomerNumber });
+    
+    db.run(`INSERT INTO fpNotesLog (fpStreetAddress, fpNote, fpTimestamp, fpAuthor, fpCreatedAt, fpCustomerNumber) 
+            VALUES (?, ?, ?, ?, ?, ?)`,
+        [fpStreetAddress, fpNote, fpTimestamp, fpAuthor || '', fpCreatedAt || new Date().toISOString(), fpCustomerNumber],
+        (err) => {
+            if (err) {
+                console.error('Error saving FP note:', err);
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.json({ message: 'FP Note saved successfully' });
+        });
+});
+
+app.get('/api/fp-notes/:address', (req, res) => {
+    const address = req.params.address;
+    console.log('Fetching FP notes for address:', address);
+    
+    db.all(`SELECT * FROM fpNotesLog 
+            WHERE fpStreetAddress = ? 
+            ORDER BY fpTimestamp DESC`,
+        [address],
+        (err, rows) => {
+            if (err) {
+                console.error('Error fetching FP notes:', err);
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.json(rows);
+        });
+});
+
+// Modify the delete client endpoint to also delete FP notes
+app.delete('/api/client/:id', (req, res) => {
+    const recordId = req.params.id;
+    
+    // First get the street address to delete associated notes
+    db.get('SELECT streetAddress, customerNumber FROM ClientProfile WHERE rowid = ?', [recordId], (err, row) => {
+        if (err) {
+            console.error('Error finding record:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        
+        if (!row) {
+            return res.status(404).json({ error: 'Record not found' });
+        }
+        
+        const streetAddress = row.streetAddress;
+        const customerNumber = row.customerNumber;
+        
+        // Begin transaction
+        db.run('BEGIN TRANSACTION', (err) => {
+            if (err) {
+                console.error('Transaction error:', err);
+                return res.status(500).json({ error: err.message });
+            }
+            
+            // Delete RGA notes associated with the address
+            db.run('DELETE FROM NotesLog WHERE streetAddress = ?', [streetAddress], (err) => {
+                if (err) {
+                    console.error('Error deleting RGA notes:', err);
+                    db.run('ROLLBACK');
+                    return res.status(500).json({ error: err.message });
+                }
+                
+                // Delete FP notes associated with the address
+                db.run('DELETE FROM fpNotesLog WHERE fpStreetAddress = ?', [streetAddress], (err) => {
+                    if (err) {
+                        console.error('Error deleting FP notes:', err);
+                        db.run('ROLLBACK');
+                        return res.status(500).json({ error: err.message });
+                    }
+                    
+                    // Delete the client record
+                    db.run('DELETE FROM ClientProfile WHERE rowid = ?', [recordId], function(err) {
+                        if (err) {
+                            console.error('Error deleting client:', err);
+                            db.run('ROLLBACK');
+                            return res.status(500).json({ error: err.message });
+                        }
+                        
+                        if (this.changes === 0) {
+                            db.run('ROLLBACK');
+                            return res.status(404).json({ error: 'Record not found' });
+                        }
+                        
+                        // Commit the transaction
+                        db.run('COMMIT', (err) => {
+                            if (err) {
+                                console.error('Commit error:', err);
+                                db.run('ROLLBACK');
+                                return res.status(500).json({ error: err.message });
+                            }
+                            
+                            console.log(`Record ${recordId} and associated notes deleted`);
+                            res.json({ message: 'Record and associated notes deleted successfully' });
+                        });
+                    });
+                });
+            });
+        });
+    });
+});
+
+// Create fpDocs table if it doesn't exist
+db.run(`CREATE TABLE IF NOT EXISTS fpDocs (
+    customerNumber TEXT,
+    docFence BLOB,
+    docFenceDesc TEXT,
+    docFenceFilename TEXT,
+    docFenceCustomerView TEXT DEFAULT '0',
+    docFenceInternalView TEXT DEFAULT '1',
+    docPaint BLOB,
+    docPaintDesc TEXT,
+    docPaintFilename TEXT,
+    docPaintCustomerView TEXT DEFAULT '0',
+    docPaintInternalView TEXT DEFAULT '1'
+)`);
+
+// Create fpImages table if it doesn't exist
+db.run(`CREATE TABLE IF NOT EXISTS fpImages (
+    customerNumber TEXT,
+    imageFence BLOB,
+    imageFenceDesc TEXT,
+    imageFenceFilename TEXT,
+    imageFenceCustomerView TEXT DEFAULT '0',
+    imageFenceInternalView TEXT DEFAULT '1',
+    imagePaint BLOB,
+    imagePaintDesc TEXT,
+    imagePaintFilename TEXT,
+    imagePaintCustomerView TEXT DEFAULT '0',
+    imagePaintInternalView TEXT DEFAULT '1'
+)`);
+
+// Create fpVideos table if it doesn't exist
+db.run(`CREATE TABLE IF NOT EXISTS fpVideos (
+    customerNumber TEXT,
+    videoFence BLOB,
+    videoFenceDesc TEXT,
+    videoFenceFilename TEXT,
+    videoFenceCustomerView TEXT DEFAULT '0',
+    videoFenceInternalView TEXT DEFAULT '1',
+    videoPaint BLOB,
+    videoPaintDesc TEXT,
+    videoPaintFilename TEXT,
+    videoPaintCustomerView TEXT DEFAULT '0',
+    videoPaintInternalView TEXT DEFAULT '1'
+)`);
+
+// API endpoint to get customer FP documents
+app.get('/api/fp-customer-docs/:customerNumber', (req, res) => {
+  const customerNumber = req.params.customerNumber;
+
+  db.all(
+    `SELECT customerNumber, 
+            docFence as fenceDoc, docFenceDesc as fenceDesc, docFenceFilename as fenceFilename,
+            docFenceCustomerView as fenceCustomerView, docFenceInternalView as fenceInternalView,
+            docPaint as paintDoc, docPaintDesc as paintDesc, docPaintFilename as paintFilename,
+            docPaintCustomerView as paintCustomerView, docPaintInternalView as paintInternalView
+     FROM fpDocs 
+     WHERE customerNumber = ?`,
+    [customerNumber],
+    (err, rows) => {
+      if (err) {
+        console.error('Database error when fetching FP docs:', err);
+        return res.status(500).json({ error: 'Database error when fetching documents' });
+      }
+
+      const docs = [];
+      
+      rows.forEach(row => {
+        if (row.fenceDoc) {
+          docs.push({
+            id: row.customerNumber + '_fence',
+            category: 'Fence',
+            filename: row.fenceFilename || 'Fence Document',
+            description: row.fenceDesc || 'Fence Document',
+            customerView: row.fenceCustomerView,
+            internalView: row.fenceInternalView
+          });
+        }
+        if (row.paintDoc) {
+          docs.push({
+            id: row.customerNumber + '_paint',
+            category: 'Paint',
+            filename: row.paintFilename || 'Paint Document',
+            description: row.paintDesc || 'Paint Document',
+            customerView: row.paintCustomerView,
+            internalView: row.paintInternalView
+          });
+        }
+      });
+
+      return res.json({ docs });
+    }
+  );
+});
+
+// API endpoint to get customer FP images
+app.get('/api/fp-customer-images/:customerNumber', (req, res) => {
+  const customerNumber = req.params.customerNumber;
+
+  db.all(
+    `SELECT customerNumber, 
+            imageFence as fenceImage, imageFenceDesc as fenceDesc, imageFenceFilename as fenceFilename,
+            imageFenceCustomerView as fenceCustomerView, imageFenceInternalView as fenceInternalView,
+            imagePaint as paintImage, imagePaintDesc as paintDesc, imagePaintFilename as paintFilename,
+            imagePaintCustomerView as paintCustomerView, imagePaintInternalView as paintInternalView
+     FROM fpImages 
+     WHERE customerNumber = ?`,
+    [customerNumber],
+    (err, rows) => {
+      if (err) {
+        console.error('Database error when fetching FP images:', err);
+        return res.status(500).json({ error: 'Database error when fetching images' });
+      }
+
+      const images = [];
+      
+      rows.forEach(row => {
+        if (row.fenceImage) {
+          images.push({
+            id: row.customerNumber + '_fence',
+            category: 'Fence',
+            filename: row.fenceFilename || 'Fence Image',
+            description: row.fenceDesc || 'Fence Image',
+            customerView: row.fenceCustomerView,
+            internalView: row.fenceInternalView
+          });
+        }
+        if (row.paintImage) {
+          images.push({
+            id: row.customerNumber + '_paint',
+            category: 'Paint',
+            filename: row.paintFilename || 'Paint Image',
+            description: row.paintDesc || 'Paint Image',
+            customerView: row.paintCustomerView,
+            internalView: row.paintInternalView
+          });
+        }
+      });
+
+      return res.json({ images });
+    }
+  );
+});
+
+// API endpoint to get customer FP videos
+app.get('/api/fp-customer-videos/:customerNumber', (req, res) => {
+  const customerNumber = req.params.customerNumber;
+
+  db.all(
+    `SELECT customerNumber, 
+            videoFence as fenceVideo, videoFenceDesc as fenceDesc, videoFenceFilename as fenceFilename,
+            videoFenceCustomerView as fenceCustomerView, videoFenceInternalView as fenceInternalView,
+            videoPaint as paintVideo, videoPaintDesc as paintDesc, videoPaintFilename as paintFilename,
+            videoPaintCustomerView as paintCustomerView, videoPaintInternalView as paintInternalView
+     FROM fpVideos 
+     WHERE customerNumber = ?`,
+    [customerNumber],
+    (err, rows) => {
+      if (err) {
+        console.error('Database error when fetching FP videos:', err);
+        return res.status(500).json({ error: 'Database error when fetching videos' });
+      }
+
+      const videos = [];
+      
+      rows.forEach(row => {
+        if (row.fenceVideo) {
+          videos.push({
+            id: row.customerNumber + '_fence',
+            category: 'Fence',
+            filename: row.fenceFilename || 'Fence Video',
+            description: row.fenceDesc || 'Fence Video',
+            customerView: row.fenceCustomerView,
+            internalView: row.fenceInternalView
+          });
+        }
+        if (row.paintVideo) {
+          videos.push({
+            id: row.customerNumber + '_paint',
+            category: 'Paint',
+            filename: row.paintFilename || 'Paint Video',
+            description: row.paintDesc || 'Paint Video',
+            customerView: row.paintCustomerView,
+            internalView: row.paintInternalView
+          });
+        }
+      });
+
+      return res.json({ videos });
+    }
+  );
+});
+
+// API endpoint to download FP media
+app.get('/api/fp-download-media/:mediaType/:category/:customerNumber', (req, res) => {
+  const { mediaType, category, customerNumber } = req.params;
+  
+  // Capitalize first letter of category
+  const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+
+  // Database column configuration
+  const mediaConfig = {
+    Document: { table: 'fpDocs', prefix: 'doc', mime: 'application/pdf' },
+    Image: { table: 'fpImages', prefix: 'image', mime: 'image/jpeg' },
+    Video: { table: 'fpVideos', prefix: 'video', mime: 'video/mp4' }
+  };
+
+  const config = mediaConfig[mediaType];
+  if (!config) return res.status(400).json({ error: "Invalid media type" });
+
+  // Use formatted category for column names
+  const columnName = `${config.prefix}${formattedCategory}`;
+  const filenameColumn = `${columnName}Filename`;
+
+  // Query to find the specific row with the document
+  const query = `
+    SELECT ${columnName} as fileData, ${filenameColumn} as filename 
+    FROM ${config.table} 
+    WHERE customerNumber = ? AND ${columnName} IS NOT NULL
+    LIMIT 1
+  `;
+
+  db.get(
+    query,
+    [customerNumber],
+    (err, row) => {
+      if (err) {
+        console.error(`Database error: ${err.message}`);
+        return res.status(500).json({ error: "Database error" });
+      }
+
+      if (!row?.fileData) {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      // Set proper MIME type
+      res.setHeader('Content-Type', config.mime);
+      res.setHeader('Content-Disposition', `attachment; filename="${row.filename || formattedCategory}"`);
+      res.send(Buffer.from(row.fileData));
+    }
+  );
+});
+
+// API endpoint to update FP file view settings
+app.post('/api/fp-update-file-view', (req, res) => {
+  const { mediaType, category, fileId, customerNumber, viewType, value, filename } = req.body;
+  
+  if (!mediaType || !category || !customerNumber || !viewType || !filename) {
+    return res.status(400).json({ success: false, error: 'Missing required parameters' });
+  }
+  
+  // Determine the table and column names based on mediaType and category
+  let tableName, viewColumn, filenameColumn;
+  
+  // Format category to ensure proper capitalization
+  const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+  
+  switch(mediaType) {
+    case 'Document':
+      tableName = 'fpDocs';
+      viewColumn = viewType === 'customer' ? `doc${formattedCategory}CustomerView` : `doc${formattedCategory}InternalView`;
+      filenameColumn = `doc${formattedCategory}Filename`;
+      break;
+    case 'Image':
+      tableName = 'fpImages';
+      viewColumn = viewType === 'customer' ? `image${formattedCategory}CustomerView` : `image${formattedCategory}InternalView`;
+      filenameColumn = `image${formattedCategory}Filename`;
+      break;
+    case 'Video':
+      tableName = 'fpVideos';
+      viewColumn = viewType === 'customer' ? `video${formattedCategory}CustomerView` : `video${formattedCategory}InternalView`;
+      filenameColumn = `video${formattedCategory}Filename`;
+      break;
+    default:
+      return res.status(400).json({ success: false, error: 'Invalid media type' });
+  }
+  
+  // Update the database - using BOTH customerNumber AND filename to identify the correct row
+  db.run(
+    `UPDATE ${tableName} SET ${viewColumn} = ? WHERE customerNumber = ? AND ${filenameColumn} = ?`,
+    [value, customerNumber, filename],
+    function(err) {
+      if (err) {
+        console.error(`Database error updating view setting:`, err);
+        return res.status(500).json({ success: false, error: 'Database error' });
+      }
+      
+      console.log(`Update result: ${this.changes} rows changed`);
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ success: false, error: 'File not found or no changes made' });
+      }
+      
+      res.json({ success: true });
+    }
+  );
+});
+
+// API endpoint to upload FP media
+app.post('/api/fp-upload-media', upload.single('file'), (req, res) => {
+  const { topic, mediaType, description, customerView, internalView, customerNumber } = req.body;
+  const file = req.file;
+  
+  if (!file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  
+  if (!topic || !mediaType || !customerNumber) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  
+  // Format topic to ensure proper capitalization (Fence or Paint)
+  const formattedTopic = topic.charAt(0).toUpperCase() + topic.slice(1).toLowerCase();
+  
+  // Determine table and column names based on mediaType and topic
+  let tableName, dataColumn, descColumn, filenameColumn, customerViewColumn, internalViewColumn;
+  
+  switch(mediaType) {
+    case 'Document':
+      tableName = 'fpDocs';
+      dataColumn = `doc${formattedTopic}`;
+      descColumn = `doc${formattedTopic}Desc`;
+      filenameColumn = `doc${formattedTopic}Filename`;
+      customerViewColumn = `doc${formattedTopic}CustomerView`;
+      internalViewColumn = `doc${formattedTopic}InternalView`;
+      break;
+    case 'Image':
+      tableName = 'fpImages';
+      dataColumn = `image${formattedTopic}`;
+      descColumn = `image${formattedTopic}Desc`;
+      filenameColumn = `image${formattedTopic}Filename`;
+      customerViewColumn = `image${formattedTopic}CustomerView`;
+      internalViewColumn = `image${formattedTopic}InternalView`;
+      break;
+    case 'Video':
+      tableName = 'fpVideos';
+      dataColumn = `video${formattedTopic}`;
+      descColumn = `video${formattedTopic}Desc`;
+      filenameColumn = `video${formattedTopic}Filename`;
+      customerViewColumn = `video${formattedTopic}CustomerView`;
+      internalViewColumn = `video${formattedTopic}InternalView`;
+      break;
+    default:
+      return res.status(400).json({ error: 'Invalid media type' });
+  }
+  
+  // Check if a record already exists for this customer
+  db.get(`SELECT customerNumber FROM ${tableName} WHERE customerNumber = ?`, [customerNumber], (err, row) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (row) {
+      // Update existing record
+      const updateQuery = `UPDATE ${tableName} SET 
+        ${dataColumn} = ?, 
+        ${descColumn} = ?, 
+        ${filenameColumn} = ?,
+        ${customerViewColumn} = ?,
+        ${internalViewColumn} = ?
+        WHERE customerNumber = ?`;
+      
+      db.run(updateQuery, 
+        [file.buffer, description, file.originalname, customerView, internalView, customerNumber],
+        function(err) {
+          if (err) {
+            console.error('Error updating media:', err);
+            return res.status(500).json({ error: 'Error updating media' });
+          }
+          
+          res.json({ success: true, message: 'Media updated successfully' });
+        }
+      );
+    } else {
+      // Insert new record
+      const columns = ['customerNumber', dataColumn, descColumn, filenameColumn, customerViewColumn, internalViewColumn];
+      const placeholders = columns.map(() => '?').join(', ');
+      
+      const insertQuery = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`;
+      
+      db.run(insertQuery,
+        [customerNumber, file.buffer, description, file.originalname, customerView, internalView],
+        function(err) {
+          if (err) {
+            console.error('Error saving media:', err);
+            return res.status(500).json({ error: 'Error saving media' });
+          }
+          
+          res.json({ success: true, message: 'Media saved successfully' });
+        }
+      );
+    }
+  });
+});
+
+// API endpoint to delete FP media
+app.delete('/api/fp-delete-media/:mediaType/:category/:customerNumber/:filename', (req, res) => {
+  const { mediaType, category, customerNumber, filename } = req.params;
+  
+  // Format category to ensure proper capitalization
+  const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+  
+  // Determine table and column names based on mediaType and category
+  let tableName, dataColumn, descColumn, filenameColumn, customerViewColumn, internalViewColumn;
+  
+  switch(mediaType) {
+    case 'Document':
+      tableName = 'fpDocs';
+      dataColumn = `doc${formattedCategory}`;
+      descColumn = `doc${formattedCategory}Desc`;
+      filenameColumn = `doc${formattedCategory}Filename`;
+      customerViewColumn = `doc${formattedCategory}CustomerView`;
+      internalViewColumn = `doc${formattedCategory}InternalView`;
+      break;
+    case 'Image':
+      tableName = 'fpImages';
+      dataColumn = `image${formattedCategory}`;
+      descColumn = `image${formattedCategory}Desc`;
+      filenameColumn = `image${formattedCategory}Filename`;
+      customerViewColumn = `image${formattedCategory}CustomerView`;
+      internalViewColumn = `image${formattedCategory}InternalView`;
+      break;
+    case 'Video':
+      tableName = 'fpVideos';
+      dataColumn = `video${formattedCategory}`;
+      descColumn = `video${formattedCategory}Desc`;
+      filenameColumn = `video${formattedCategory}Filename`;
+      customerViewColumn = `video${formattedCategory}CustomerView`;
+      internalViewColumn = `video${formattedCategory}InternalView`;
+      break;
+    default:
+      return res.status(400).json({ error: 'Invalid media type' });
+  }
+  
+  // Update the record to clear the media fields
+  const updateQuery = `UPDATE ${tableName} SET 
+    ${dataColumn} = NULL, 
+    ${descColumn} = NULL, 
+    ${filenameColumn} = NULL,
+    ${customerViewColumn} = '0',
+    ${internalViewColumn} = '1'
+    WHERE customerNumber = ? AND ${filenameColumn} = ?`;
+  
+  db.run(updateQuery, [customerNumber, filename], function(err) {
+    if (err) {
+      console.error('Error deleting media:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    res.json({ success: true, message: 'Media deleted successfully' });
+  });
 });
 
 // Start server
