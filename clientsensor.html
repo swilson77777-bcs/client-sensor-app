@@ -2997,6 +2997,37 @@ function displayCurrentRecord() {
         }
     };
 
+    // Helper function to set select values properly
+    const setSelectValue = (selectElement, value) => {
+        if (!selectElement || !value) return;
+        
+        // Try to find the option with the matching value
+        let found = false;
+        for (let i = 0; i < selectElement.options.length; i++) {
+            if (selectElement.options[i].value === value) {
+                selectElement.selectedIndex = i;
+                found = true;
+                break;
+            }
+        }
+        
+        // If not found, add it as a new option
+        if (!found && value) {
+            const newOption = document.createElement('option');
+            newOption.value = value;
+            newOption.text = value;
+            selectElement.add(newOption);
+            
+            // Now set it as selected
+            for (let i = 0; i < selectElement.options.length; i++) {
+                if (selectElement.options[i].value === value) {
+                    selectElement.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+    };
+
     // Populate fields
     setFieldValue('customerNumber', data.customerNumber);
     setFieldValue('username', data.username);
@@ -3085,10 +3116,25 @@ function displayCurrentRecord() {
         gutterSalesOther.value = '';
     }
 
-
     // Populate roof-related fields
     setFieldValue('roofMaterial', data.roofMaterial);
     setFieldValue('manufacturer', data.manufacturer);
+
+    // Explicitly handle Vent Type dropdown
+    const ventTypeSelect = document.getElementById('ventType');
+    if (ventTypeSelect && data.ventType) {
+        setSelectValue(ventTypeSelect, data.ventType);
+    }
+
+    // Explicitly handle Roof Owner Status dropdown using clientType
+    const roofOwnerStatusSelect = document.getElementById('clientType');
+    if (roofOwnerStatusSelect) {
+        setSelectValue(roofOwnerStatusSelect, data.clientType || '');
+    }
+
+    // Handle roof install date and warranty expiration
+    setFieldValue('installDate', data.installDate);
+    setFieldValue('bcsWarrantyExpiration', data.bcsWarrantyExpiration);
 
     handleManufacturerChange().then(() => {
         const roofTypeSelect = document.getElementById('roofType');
@@ -3119,13 +3165,19 @@ function displayCurrentRecord() {
     });
 
     // Populate gutter-related fields
-    ['gutterSize', 'gutterColor', 'gutterBrand', 'gutterClientType'].forEach(field => {
+    ['gutterSize', 'gutterColor', 'gutterBrand'].forEach(field => {
         setFieldValue(field, data[field]);
         const dropdown = document.getElementById(field);
         if (dropdown && data[field] && !Array.from(dropdown.options).some(opt => opt.value === data[field])) {
             dropdown.innerHTML += `<option value="${data[field]}">${data[field]}</option>`;
         }
     });
+
+    // Explicitly handle Gutter Owner Status dropdown using gutterClientType
+    const gutterOwnerStatusSelect = document.getElementById('gutterClientType');
+    if (gutterOwnerStatusSelect) {
+        setSelectValue(gutterOwnerStatusSelect, data.gutterClientType || '');
+    }
 
     setFieldValue('gutterInstallDate', data.gutterInstallDate);
     setFieldValue('gutterWarrantyExpiration', data.gutterWarrantyExpiration);
@@ -3153,7 +3205,7 @@ function displayCurrentRecord() {
         setFieldValue('fenceStyle', data.fenceStyle);
         setFieldValue('fenceOwnerStatus', data.fenceOwnerStatus);
         setFieldValue('fenceInstallDate', data.fenceInstallDate);
-        setFieldValue('fenceWarrantyExp', data.fenceWarrantyExp); // Changed from fenceWarrantyExp to fenceWarrantyExpiration
+        setFieldValue('fenceWarrantyExp', data.fenceWarrantyExp);
         
         // Handle fence sales rep with "other" option
         const fenceSalesSelect = document.getElementById('fenceSalesRep');
@@ -3185,19 +3237,19 @@ function displayCurrentRecord() {
             fenceSalesOther.value = '';
         }
         
-        // Populate painting fields with corrected IDs
-        setFieldValue('paintingType', data.paintingType); // Changed from paintingType to paintType
-        setFieldValue('paintingColor', data.paintingColor); // Changed from paintingColor to paintColor
-        setFieldValue('paintingBrand', data.paintingBrand); // Changed from paintingBrand to paintBrand
-        setFieldValue('paintingFinish', data.paintingFinish); // Changed from paintingFinish to paintFinish
-        setFieldValue('paintingAreaPainted', data.paintingAreaPainted); // Changed from paintingAreaPainted to areaPainted
-        setFieldValue('paintingOwnerStatus', data.paintingOwnerStatus); // Changed from paintingOwnerStatus to paintOwnerStatus
-        setFieldValue('paintingDate', data.paintingDate); // Changed from paintingDate to paintDate
-        setFieldValue('paintingWarrantyExp', data.paintingWarrantyExp); // Changed from paintingWarrantyExp to paintWarrantyExpiration
+        // Populate painting fields
+        setFieldValue('paintingType', data.paintingType);
+        setFieldValue('paintingColor', data.paintingColor);
+        setFieldValue('paintingBrand', data.paintingBrand);
+        setFieldValue('paintingFinish', data.paintingFinish);
+        setFieldValue('paintingAreaPainted', data.paintingAreaPainted);
+        setFieldValue('paintingOwnerStatus', data.paintingOwnerStatus);
+        setFieldValue('paintingDate', data.paintingDate);
+        setFieldValue('paintingWarrantyExp', data.paintingWarrantyExp);
         
         // Handle painting sales rep with "other" option
-        const paintingSalesSelect = document.getElementById('paintingSalesRep'); // Changed from paintingSalesRep to paintingSalesRep
-        const paintingSalesOther = document.getElementById('paintingSalesRepOther'); // Changed from paintingSalesRepOther to paintingSalesRepOther
+        const paintingSalesSelect = document.getElementById('paintingSalesRep');
+        const paintingSalesOther = document.getElementById('paintingSalesRepOther');
         
         if (paintingSalesSelect && paintingSalesOther && data.paintingSalesRep) {
             // Check if value exists in dropdown
@@ -3484,71 +3536,139 @@ function resetSearchCriteria() {
     // Reset user data fields
     document.getElementById('clientForm').reset();
 
-    // Clear dependent dropdowns
-    document.getElementById('roofType').innerHTML = '<option value="">Select...</option>';
-    document.getElementById('modelOfMaterial').innerHTML = '<option value="">Select...</option>';
-    document.getElementById('color').innerHTML = '<option value="">Select...</option>';
+    // --- ROOF INFORMATION ---
+    const roofFields = [
+        'roofMaterial', 'manufacturer', 'roofType', 'modelOfMaterial', 'color', 'ventType', 'roofOwnerStatus', 'roofSalesRep'
+    ];
+    roofFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.tagName === 'SELECT') el.selectedIndex = 0;
+    });
+    // Explicitly reset date fields under Roof Information
+    const installDate = document.getElementById('installDate');
+    if (installDate) installDate.value = '';
+    const bcsWarrantyExpiration = document.getElementById('bcsWarrantyExpiration');
+    if (bcsWarrantyExpiration) bcsWarrantyExpiration.value = '';
 
-    // Reset mobile access code group
-    document.getElementById('mobileAccessCodeGroup').style.display = 'none';
-    document.getElementById('mobileAccessCode').value = '';
+    // --- GUTTER INFORMATION ---
+    const gutterFields = [
+        'gutterSize', 'gutterColor', 'gutterBrand', 'gutterOwnerStatus', 'gutterSalesRep'
+    ];
+    gutterFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.tagName === 'SELECT') el.selectedIndex = 0;
+    });
+    // Explicitly reset date fields under Gutter Information
+    const gutterInstallDate = document.getElementById('gutterInstallDate');
+    if (gutterInstallDate) gutterInstallDate.value = '';
+    const gutterWarrantyExpiration = document.getElementById('gutterWarrantyExpiration');
+    if (gutterWarrantyExpiration) gutterWarrantyExpiration.value = '';
 
-    // Clear notes list
-    document.getElementById('notesList').innerHTML = '';
-    
-    // Reset gutter fields
-    document.getElementById('gutterSize').selectedIndex = 0;
-    document.getElementById('gutterColor').selectedIndex = 0;
-    document.getElementById('gutterBrand').selectedIndex = 0;
-
-
-    // Reset device fields
-    for (let i = 1; i <= 10; i++) {
-        document.getElementById(`deviceName${i}`).value = '';
-        document.getElementById(`deviceMac${i}`).value = '';
-        document.getElementById(`deviceSku${i}`).value = '';
+    // --- FENCING INFORMATION (FP fields) ---
+    const fenceFields = [
+        'fenceType', 'fenceMaterial', 'fenceHeight', 'fenceColor',
+        'fenceStyle', 'fenceOwnerStatus', 'fenceSalesRep'
+    ];
+    fenceFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.tagName === 'SELECT') el.selectedIndex = 0;
+    });
+    const fenceInstallDate = document.getElementById('fenceInstallDate');
+    if (fenceInstallDate) fenceInstallDate.value = '';
+    const fenceWarrantyExp = document.getElementById('fenceWarrantyExp');
+    if (fenceWarrantyExp) fenceWarrantyExp.value = '';
+    const fenceSalesRepOther = document.getElementById('fenceSalesRepOther');
+    if (fenceSalesRepOther) {
+        fenceSalesRepOther.value = '';
+        fenceSalesRepOther.style.display = 'none';
     }
 
-    // Clear search results and update UI
+    // --- PAINTING INFORMATION (FP fields) ---
+    const paintingFields = [
+        'paintingType', 'paintingColor', 'paintingBrand', 'paintingFinish',
+        'paintingAreaPainted', 'paintingOwnerStatus', 'paintingSalesRep'
+    ];
+    paintingFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.tagName === 'SELECT') el.selectedIndex = 0;
+    });
+    const paintingDate = document.getElementById('paintingDate');
+    if (paintingDate) paintingDate.value = '';
+    const paintingWarrantyExp = document.getElementById('paintingWarrantyExp');
+    if (paintingWarrantyExp) paintingWarrantyExp.value = '';
+    const paintingSalesRepOther = document.getElementById('paintingSalesRepOther');
+    if (paintingSalesRepOther) {
+        paintingSalesRepOther.value = '';
+        paintingSalesRepOther.style.display = 'none';
+    }
+
+    // --- FP REFERRAL FIELDS ---
+    const fpReferralFields = ['fpFirstName', 'fpLastName', 'fpPhoneNumber', 'fpEmail'];
+    fpReferralFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    // --- FP NOTES ---
+    const fpNotes = document.getElementById('fpNotes');
+    if (fpNotes) fpNotes.value = '';
+    const fpPreviousNotes = document.getElementById('fpPreviousNotes');
+    if (fpPreviousNotes) fpPreviousNotes.innerHTML = '';
+
+    // --- FP MEDIA FILES LIST ---
+    const filesList = document.getElementById('filesList');
+    if (filesList) filesList.innerHTML = '';
+
+    // --- Reset device fields ---
+    for (let i = 1; i <= 10; i++) {
+        const name = document.getElementById(`deviceName${i}`);
+        const mac = document.getElementById(`deviceMac${i}`);
+        const sku = document.getElementById(`deviceSku${i}`);
+        if (name) name.value = '';
+        if (mac) mac.value = '';
+        if (sku) sku.value = '';
+    }
+
+    // --- Notes and UI ---
+    document.getElementById('notesList').innerHTML = '';
     searchResults = [];
     currentResultIndex = 0;
     document.getElementById('recordCounter').textContent = '';
     document.getElementById('prevButton').disabled = true;
     document.getElementById('nextButton').disabled = true;
 
-    // Hide delete buttons
-    const deleteBtn = document.getElementById('deleteRecordBtn');
-    const deleteBtn2 = document.getElementById('deleteRecordBtn2');
-    const fpDeleteBtn = document.getElementById('fpDeleteRecord');
+    // --- Hide delete buttons ---
+    ['deleteRecordBtn', 'deleteRecordBtn2', 'fpDeleteRecord'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.style.display = 'none';
+    });
 
-    if (deleteBtn) deleteBtn.style.display = 'none';
-    if (deleteBtn2) deleteBtn2.style.display = 'none';
-    if (fpDeleteBtn) fpDeleteBtn.style.display = 'none';
-
-    // For the fence/painting delete button, set a flag if it's not visible yet
-    if (fpDeleteBtn) {
-      fpDeleteBtn.style.display = 'inline-block';
-    } else {
-    // Store the state in a global variable or localStorage
-  window.fpDeleteButtonShouldBeVisible = true;
-  }
-
-
+    // --- Reset fence/painting fields if function is available ---
+    if (typeof window.resetFencePaintingFields === 'function') {
+        window.resetFencePaintingFields();
     }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const gutterDropdowns = ['gutterSize', 'gutterColor', 'gutterBrand'];
-    
-    gutterDropdowns.forEach(id => {
-        const dropdown = document.getElementById(id);
-        dropdown.addEventListener('change', handleGutterDropdownChange);
-        document.getElementById('gutterClientType').addEventListener('change', handleGutterDropdownChange);
-    });
+    // --- Clear any stored referral data ---
+    sessionStorage.removeItem('fpFirstName');
+    sessionStorage.removeItem('fpLastName');
+    sessionStorage.removeItem('fpPhoneNumber');
+    sessionStorage.removeItem('fpEmail');
 
-        gutterDropdowns.forEach(id => {
-        const dropdown = document.getElementById(id);        
-    });
-});
+    // --- Reset record ID ---
+    const recordId = document.getElementById('recordId');
+    if (recordId) recordId.value = '';
+
+    // --- Reset roof owner status (clientType) and gutter owner status (gutterClientType) ---
+    const clientType = document.getElementById('clientType');
+    if (clientType) clientType.selectedIndex = 0;
+    const gutterClientType = document.getElementById('gutterClientType');
+    if (gutterClientType) gutterClientType.selectedIndex = 0;
+
+    // --- Show notification ---
+    if (typeof showNotification === 'function') {
+        showNotification('Form has been reset', 'info');
+    }
+}
 
 function handleGutterDropdownChange(event) {
     if (event.target.value === 'Other') {
