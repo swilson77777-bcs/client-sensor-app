@@ -210,7 +210,7 @@
     <div style="display: flex; justify-content: space-between;">
         <div style="width: 48%;">
             <label for="fpPhoneNumber">Phone:</label>
-            <input type="tel" id="fpPhoneNumber" name="fpPhoneNumber" placeholder="(xxx) xxx-xxxx" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="tel" id="fpPhoneNumber" name="fpPhoneNumber" placeholder="(xxx) xxx-xxxx" onkeyup="formatPhoneNumber(this)" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
         <div style="width: 48%;">
             <label for="fpEmail">Email:</label>
@@ -260,11 +260,13 @@
 
     <script>
 
+    /*  
     const inputField = document.getElementById('fpFirstName');
     // Add event listener for input event
 inputField.addEventListener('input', function() {
     console.log('Current fpFirstName value:', inputField.value);
 });
+*/
 
 
     // Initialize the Fencing/Painting section
@@ -1525,6 +1527,72 @@ function deleteFpMedia(mediaType, category, customerNumber, filename) {
     });
   });
 }
+
+document.getElementById('fpAddNote').addEventListener('click', addFpNote);
+
+
+function resetFencePaintingFields() {
+    // Fencing fields
+    [
+        'fenceType', 'fenceMaterial', 'fenceHeight', 'fenceColor',
+        'fenceStyle', 'fenceOwnerStatus', 'fenceInstallDate', 'fenceWarrantyExp', 'fenceSalesRep'
+    ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.tagName === 'SELECT') el.selectedIndex = 0;
+            else el.value = '';
+        }
+    });
+    // Hide and clear "Other" sales rep
+    const fenceSalesRepOther = document.getElementById('fenceSalesRepOther');
+    if (fenceSalesRepOther) {
+        fenceSalesRepOther.value = '';
+        fenceSalesRepOther.style.display = 'none';
+    }
+
+    // Painting fields
+    [
+        'paintingType', 'paintingColor', 'paintingBrand', 'paintingFinish',
+        'paintingAreaPainted', 'paintingOwnerStatus', 'paintingDate', 'paintingWarrantyExp', 'paintingSalesRep'
+    ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.tagName === 'SELECT') el.selectedIndex = 0;
+            else el.value = '';
+        }
+    });
+    // Hide and clear "Other" sales rep
+    const paintingSalesRepOther = document.getElementById('paintingSalesRepOther');
+    if (paintingSalesRepOther) {
+        paintingSalesRepOther.value = '';
+        paintingSalesRepOther.style.display = 'none';
+    }
+
+    // Referral fields
+    ['fpFirstName', 'fpLastName', 'fpPhoneNumber', 'fpEmail'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    // Notes and files
+    const fpNotes = document.getElementById('fpNotes');
+    if (fpNotes) fpNotes.value = '';
+
+    const fpPreviousNotes = document.getElementById('fpPreviousNotes');
+    if (fpPreviousNotes) fpPreviousNotes.innerHTML = '';
+
+    const filesList = document.getElementById('filesList');
+    if (filesList) filesList.innerHTML = '';
+
+    // Refresh notes display to show "No notes found" or clear state
+    if (typeof loadFpNotes === 'function') {
+        loadFpNotes();
+    }
+}
+
+// Make it globally accessible
+window.resetFencePaintingFields = resetFencePaintingFields;
+
 
 
     </script>

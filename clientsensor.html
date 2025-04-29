@@ -49,6 +49,10 @@
     
 }
 
+.feature-button.selected {
+    background-color: #d6b4fc !important; /* Light purple */
+    color: #222 !important;
+}
 
 .generate-code-btn:hover, .copy-code-btn:hover {
     background-color: #FF1493 !important;  /* Slightly darker pink for hover state */
@@ -627,7 +631,7 @@
     </div>
     <div class="form-group">
                 <label for="searchPhone">Phone:</label>
-                <input type="tel" id="searchPhone" class="wide-input" placeholder="(xxx) xxx-xxxx">
+                <input type="tel" id="searchPhone" class="wide-input" placeholder="(xxx) xxx-xxxx" onkeyup="formatPhoneNumber(this)">
             </div>
     <div class="form-group">
                 <label for="customerNumber">Customer #:</label>
@@ -670,7 +674,7 @@
     </div>
     <div class="form-group">
         <label for="searchReferralPhone">Phone:</label>
-        <input type="tel" id="searchReferralPhone" class="wide-input" placeholder="(xxx) xxx-xxxx">
+        <input type="tel" id="searchReferralPhone" class="wide-input" placeholder="(xxx) xxx-xxxx" onkeyup="formatPhoneNumber(this)">
     </div>
     <div class="form-group">
         <label for="searchReferralEmail">Email:</label>
@@ -832,11 +836,11 @@
 
 <div class="button-group" style="display: flex; justify-content: center; flex-wrap: wrap;">
     <button type="button" onclick="checkSectionAccess('RGA')" class="feature-button" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Roof/Gutters/Attic</button>
-    <button id="fencingPaintingBtn" type="button" onclick="checkSectionAccess('FP')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Fencing/Painting</button>
-    <button type="button" onclick="checkSectionAccess('PH')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Plumbing/Handyman</button>
-    <button type="button" onclick="checkSectionAccess('LP')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Landscaping/Pool Service</button>
-    <button type="button" onclick="checkSectionAccess('REM')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Remodeling</button>
-    <button type="button" onclick="checkSectionAccess('TA')" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Tech/Audio</button>
+    <button id="fencingPaintingBtn" type="button" onclick="checkSectionAccess('FP')" class="feature-button" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Fencing/Painting</button>
+    <button type="button" onclick="checkSectionAccess('PH')" class="feature-button" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Plumbing/Handyman</button>
+    <button type="button" onclick="checkSectionAccess('LP')" class="feature-button" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Landscaping/Pool Service</button>
+    <button type="button" onclick="checkSectionAccess('REM')" class="feature-button" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Remodeling</button>
+    <button type="button" onclick="checkSectionAccess('TA')" class="feature-button" style="background-color: #4ee6d6; color: black; font-weight: bold; margin: 5px;">Tech/Audio</button>
 </div>
     </form>
 
@@ -2909,28 +2913,33 @@ gutterDropdowns.forEach(id => {
 
 async function deleteRecord() {
     const recordId = document.getElementById('recordId').value;
-    
+    const customerNumber = document.getElementById('customerNumber').value;
+    const streetAddress = document.getElementById('streetAddress').value;
+
     if (!recordId) {
         showNotification('No record selected for deletion', 'error');        
         return;
     }
-    
-    if (!confirm('Are you sure you want to delete this record? This will also delete all associated notes.')) {
+
+    if (!confirm('Are you sure you want to delete this record? This will also delete all associated notes and related records.')) {
         return;
     }
-    
+
     try {
-        const response = await fetch(`/api/client/${recordId}`, {
-            method: 'DELETE'
+        // Call a new API endpoint that deletes all related rows
+        const response = await fetch(`/api/delete-all-related`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ customerNumber, streetAddress })
         });
-        
+
         const data = await response.json();
-        
+
         if (!response.ok) {
             throw new Error(data.error || 'Error deleting record');
         }
-        showNotification('Record and associated notes deleted successfully', 'success');
-        
+        showNotification('Record and all related data deleted successfully', 'success');
+
         // Reset form and search results
         searchResults = [];
         currentResultIndex = 0;
@@ -2945,9 +2954,7 @@ async function deleteRecord() {
         if (deleteBtn) deleteBtn.style.display = 'none';
         if (deleteBtn2) deleteBtn2.style.display = 'none';
         if (fpDeleteBtn) fpDeleteBtn.style.display = 'none';
-
-
-
+        resetSearchCriteria();
 
     } catch (error) {
         showNotification('Error: ' + error.message, 'error');
@@ -3528,10 +3535,10 @@ function resetSearchCriteria() {
     document.getElementById('searchEmail').value = '';
     document.getElementById('searchcustomerNumber').value = '';
     document.getElementById('searchState').selectedIndex = 0;
-    document.getElementById('searchReferralFirstName').value = '';
-    document.getElementById('searchReferralLastName').value = '';
-    document.getElementById('searchReferralPhone').value = '';
-    document.getElementById('searchReferralEmail').value = '';
+    document.getElementById('referralFirstName').value = '';
+    document.getElementById('referralLastName').value = '';
+    document.getElementById('referralPhone').value = '';
+    document.getElementById('referralEmail').value = '';
 
     // Reset user data fields
     document.getElementById('clientForm').reset();
@@ -5491,6 +5498,14 @@ function populateReferralFieldsWhenLoaded(data) {
         console.error('Error populating referral fields:', error);
     }
 }
+
+document.querySelectorAll('.feature-button').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.feature-button').forEach(b => b.classList.remove('selected'));
+        this.classList.add('selected');
+    });
+});
+
 
     </script>
 

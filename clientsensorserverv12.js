@@ -3085,6 +3085,60 @@ app.delete('/api/fp-delete-media/:mediaType/:category/:customerNumber/:filename'
   });
 });
 
+app.post('/api/delete-all-related', (req, res) => {
+    const { customerNumber, streetAddress } = req.body;
+    if (!customerNumber && !streetAddress) {
+        return res.status(400).json({ error: 'Missing customerNumber or streetAddress' });
+    }
+
+    // List all relevant tables and columns for deletion
+    const tablesAndColumns = [
+        { table: 'ClientProfile', columns: ['customerNumber', 'streetAddress'] },
+        { table: 'NotesLog', columns: ['streetAddress'] },        
+        { table: 'RGAdocs', columns: ['customerNumber'] },
+        { table: 'RGAimages', columns: ['customerNumber'] },
+        { table: 'RGAvideos', columns: ['customerNumber'] },
+        { table: 'fpDocs', columns: ['customerNumber'] },
+        { table: 'fpImages', columns: ['customerNumber'] },
+        { table: 'fpVideos', columns: ['customerNumber'] },
+        { table: 'fpNotesLog', columns: ['fpCustomerNumber', 'fpStreetAddress'] }
+        // Add any other tables as needed
+    ];
+
+    // Build all delete statements
+    const deletes = [];
+    tablesAndColumns.forEach(({ table, columns }) => {
+        columns.forEach(col => {
+            if ((col === 'customerNumber' || col === 'fpCustomerNumber') && customerNumber) {
+                deletes.push({ sql: `DELETE FROM ${table} WHERE ${col} = ?`, param: customerNumber });
+            }
+            if ((col === 'streetAddress' || col === 'fpStreetAddress') && streetAddress) {
+                deletes.push({ sql: `DELETE FROM ${table} WHERE ${col} = ?`, param: streetAddress });
+            }
+        });
+    });
+
+    // Run all deletes in a transaction
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+        deletes.forEach(({ sql, param }) => {
+            db.run(sql, [param], function (err) {
+                if (err) {
+                    console.error(`Error deleting from ${sql}:`, err);
+                }
+            });
+        });
+        db.run('COMMIT', err => {
+            if (err) {
+                console.error('Transaction commit error:', err);
+                return res.status(500).json({ error: 'Error deleting related records' });
+            }
+            res.json({ success: true, message: 'All related records deleted.' });
+        });
+    });
+});
+
+
 // Start server
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
