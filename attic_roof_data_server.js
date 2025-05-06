@@ -8,69 +8,114 @@ const db = new sqlite3.Database(path.join(__dirname, '..', 'Sensors', 'BCS_data.
 
 router.get('/', (req, res) => {
     const customerNumber = req.query.customerNumber;
+    console.log('Looking up customer:', customerNumber);
     
-    // Modified query to start with ClientProfile instead of SensorReadings
-    const query = `
-    SELECT c.*, s.macAddress, s.timestamp, s.temperature, s.humidity
-    FROM ClientProfile c
-    LEFT JOIN SensorReadings s ON c.customerNumber = s.customerNumber
-    WHERE c.customerNumber = ?
-    ORDER BY s.timestamp DESC`;
+    // First query to check if customer exists in ClientProfile
+    const checkCustomerQuery = `
+    SELECT customerNumber, firstName, lastName, streetAddress, city, state, zipCode,
+           roofMaterial, manufacturer, roofType, modelOfMaterial, color, ventType, 
+           installDate, bcsWarrantyExpiration, gutterSize, gutterColor, gutterBrand,
+           gutterInstallDate, gutterWarrantyExpiration,
+           deviceMac1, deviceMac2, deviceMac3, deviceMac4, deviceMac5,
+           deviceMac6, deviceMac7, deviceMac8, deviceMac9, deviceMac10,
+           deviceName1, deviceName2, deviceName3, deviceName4, deviceName5,
+           deviceName6, deviceName7, deviceName8, deviceName9, deviceName10,
+           deviceSku1, deviceSku2, deviceSku3, deviceSku4, deviceSku5,
+           deviceSku6, deviceSku7, deviceSku8, deviceSku9, deviceSku10
+    FROM ClientProfile
+    WHERE customerNumber = ?
+    LIMIT 1`;
 
-    db.all(query, [customerNumber], (err, rows) => {
+    db.get(checkCustomerQuery, [customerNumber], (err, customer) => {
         if (err) {
             console.error('Database query error:', err);
             return res.status(500).json({ error: err.message });
         }
 
-        // Check if customer exists (even without sensor readings)
-        if (rows.length > 0) {
-            const firstRow = rows[0];
-            
+        if (!customer) {
+            console.log('No customer found for number:', customerNumber);
+            return res.json({ error: 'No data found for the given customer number' });
+        }
+
+        console.log('Found customer:', customer.firstName, customer.lastName);
+        
+        // Customer exists, now get any sensor readings
+        const sensorQuery = `
+        SELECT macAddress, timestamp, temperature, humidity
+        FROM SensorReadings
+        WHERE customerNumber = ?
+        ORDER BY timestamp DESC`;
+
+        db.all(sensorQuery, [customerNumber], (err, sensorRows) => {
+            if (err) {
+                console.error('Sensor query error:', err);
+                return res.status(500).json({ error: err.message });
+            }
+
             // Customer info is always available
             const customerInfo = {
-                customerNumber: firstRow.customerNumber,
-                firstName: firstRow.firstName,
-                lastName: firstRow.lastName,
-                streetAddress: firstRow.streetAddress,
-                city: firstRow.city,
-                state: firstRow.state,
-                zipCode: firstRow.zipCode
+                customerNumber: customer.customerNumber,
+                firstName: customer.firstName,
+                lastName: customer.lastName,
+                streetAddress: customer.streetAddress,
+                city: customer.city,
+                state: customer.state,
+                zipCode: customer.zipCode
             };
             
             // Roof info
             const roofInfo = {
-                material: firstRow.roofMaterial,
-                type: firstRow.roofType,
-                color: firstRow.color,
-                installDate: firstRow.installDate,
-                manufacturer: firstRow.manufacturer,
-                model: firstRow.modelOfMaterial,
-                ventType: firstRow.ventType,
-                bcsWarrantyExpiration: firstRow.bcsWarrantyExpiration
+                material: customer.roofMaterial,
+                type: customer.roofType,
+                color: customer.color,
+                installDate: customer.installDate,
+                manufacturer: customer.manufacturer,
+                model: customer.modelOfMaterial,
+                ventType: customer.ventType,
+                bcsWarrantyExpiration: customer.bcsWarrantyExpiration
             };
             
-            // Get MAC addresses from sensor readings (may be empty)
+            // Gutter info
+            const gutterInfo = {
+                size: customer.gutterSize,
+                color: customer.gutterColor,
+                brand: customer.gutterBrand,
+                installDate: customer.gutterInstallDate,
+                warrantyExpiration: customer.gutterWarrantyExpiration
+            };
+            
+            // Get MAC addresses from device fields
             const macAddresses = [];
+            for (let i = 1; i <= 10; i++) {
+                const mac = customer[`deviceMac${i}`];
+                if (mac) macAddresses.push(mac);
+            }
+            
+            // Process sensor readings if they exist
             const deviceData = {};
             
-            // Only process sensor rows that have macAddress (not NULL)
-            const sensorRows = rows.filter(row => row.macAddress);
-            
             if (sensorRows.length > 0) {
-                // Get unique MAC addresses
+                // Group readings by MAC address
                 sensorRows.forEach(row => {
-                    if (!macAddresses.includes(row.macAddress)) {
-                        macAddresses.push(row.macAddress);
-                    }
-                    
                     if (!deviceData[row.macAddress]) {
+                        // Find the device name and SKU for this MAC
+                        let deviceName = 'Unknown';
+                        let deviceSku = 'Unknown';
+                        
+                        for (let i = 1; i <= 10; i++) {
+                            if (customer[`deviceMac${i}`] === row.macAddress) {
+                                deviceName = customer[`deviceName${i}`] || 'Unknown';
+                                deviceSku = customer[`deviceSku${i}`] || 'Unknown';
+                                break;
+                            }
+                        }
+                        
                         deviceData[row.macAddress] = {
                             temperatures: [],
                             humidities: [],
                             timestamps: [],
-                            deviceName: 'Unknown',
-                            deviceSku: 'Unknown'
+                            deviceName: deviceName,
+                            deviceSku: deviceSku
                         };
                     }
                     
@@ -78,27 +123,17 @@ router.get('/', (req, res) => {
                     deviceData[row.macAddress].humidities.push(row.humidity);
                     deviceData[row.macAddress].timestamps.push(row.timestamp);
                 });
-                
-                // Match MAC addresses with device names/SKUs
-                for (let i = 1; i <= 10; i++) {
-                    const mac = firstRow[`deviceMac${i}`];
-                    if (mac && deviceData[mac]) {
-                        deviceData[mac].deviceName = firstRow[`deviceName${i}`] || 'Unknown';
-                        deviceData[mac].deviceSku = firstRow[`deviceSku${i}`] || 'Unknown';
-                    }
-                }
             }
             
+            // Send the response with all available data
             res.json({
                 customerInfo: customerInfo,
                 roofInfo: roofInfo,
+                gutterInfo: gutterInfo,
                 macAddresses: macAddresses,
                 deviceData: deviceData
             });
-        } else {
-            console.log('No results found for customer number:', customerNumber);
-            res.json({ error: 'No data found for the given customer number' });
-        }
+        });
     });
 });
 
