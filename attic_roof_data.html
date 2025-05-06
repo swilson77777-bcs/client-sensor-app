@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attic/Roof Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            max-height: 100%;
+        }
+        .customer-info {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f5f5f5 !important;
+        }
+        .device-info {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f5f5f5 !important;
+        }
+        .device-details-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .device-details {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #eee;
+        }
+        #deviceInfo {
+  margin: 0;
+  width: 1160px !important;
+}
+
+.device-row {
+  display: flex;
+  justify-content: space-between; /* Align two devices side by side */
+  gap: 20px; /* Space between devices */
+}
+
+.device-section {
+  flex-basis: calc(50% - 10px); /* Each section takes half the row width */
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.device-section p {
+  margin: 0;
+}
+        .chart-container {
+            margin: 20px 0;
+            padding: 1px;
+            border: none;
+            border-radius: 8px;
+            background: white;
+            height: auto;
+            min-height: 800px;
+        }
+        .device-info .device-details p {
+            font-size: 16px;
+        }
+        body > h2 {
+            font-size: 20px;
+        }
+        #temperatureChart, #humidityChart {
+               width: 100% !important;
+               height: 400px !important;
+               border: 1px solid #ddd;
+               border-radius: 8px;
+               padding: 15px;
+               background: white;
+        }
+        @media screen and (max-width: 768px) {
+            #deviceInfo {
+               width: 90% !important;
+               margin: 20px 0;
+            }
+            /* Make scrollbar more prominent on mobile */
+            ::-webkit-scrollbar {
+            width: 12px;
+            -webkit-appearance: none;
+            overflow: auto;
+            }
+  
+            ::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            border: 2px solid #ffffff;
+            }
+  
+            ::-webkit-scrollbar-track {
+            border-radius: 6px;
+            background-color: #f1f1f1;
+            }
+  
+  /* Ensure scrolling works properly on touch devices */
+            body {
+            -webkit-overflow-scrolling: touch;
+            }
+            .device-info .device-details p {
+                font-size: 14px !important;
+            }
+            body > h2 {
+                font-size: 24px !important;
+            }
+            .device-details {
+                flex: 1 1 100%;
+            }
+            .modebar {
+               top: 30px !important;
+               left: 50% !important;
+               right: auto !important;
+               transform: translateX(-50%) !important;
+            }
+            a.modebar-btn {
+               font-size: 30px !important;
+            }
+            
+            .device-row {
+               flex-direction: column;
+               gap: 10px;
+            }
+  
+            .device-section {
+               flex-basis: 100%;
+            }
+            .chart-container {
+               width: 90%;
+               padding: 10px;
+               margin: 10px 0;
+            }
+  
+            #temperatureChart, #humidityChart {
+               width: 110% !important;
+               height: 400px !important;
+               border: none;
+               border-radius: 8px;
+               padding: 1px;
+               background: white;
+            }
+            .modebar-btn:not([data-title="Zoom in"]):not([data-title="Zoom out"]):not([data-title="Reset axes"]) {
+               display: none !important;
+            }
+        }
+    </style>
+
+</head>
+<body>
+    <h1>Attic/Roof Data</h1>
+    <div id="customerInfo" class="customer-info"></div>
+    <div id="roofInfo" class="customer-info"></div>
+    <div id="deviceInfo" class="device-info"></div>
+    <div id="chartContainer" class="chart-container"></div>
+    <div class="button-container" style="margin-top: 10px; display: flex; justify-content: center; gap: 20px;">
+    <button id="clientPageButton" style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: bold !important;">Customer Center</button>
+    <button id="homeButton" style="padding: 10px 20px; background-color: #333; color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: bold !important;">Homepage</button>
+</div>
+
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const customerNumber = urlParams.get('customerNumber');
+
+        fetch(`/attic-roof-data?customerNumber=${customerNumber}`)
+  .then(response => response.json())
+  .then(data => {
+    console.log('Received data:', data);
+    console.log('Full response from server:', data);
+    displayCustomerInfo(data);
+    displayRoofInfo(data.roofInfo);
+    displayDeviceInfo(data);
+    createCharts(data.deviceData);
+  })
+  .catch(error => {
+    console.error('Fetch Error:', error);
+    document.body.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+  });
+
+
+        function displayCustomerInfo(data) {
+  console.log('Displaying customer info:', data.customerInfo);
+  const customerInfoDiv = document.getElementById('customerInfo');
+  if (data && data.customerInfo) {
+    const customerInfo = data.customerInfo;
+    customerInfoDiv.innerHTML = `
+      <h2>Customer Information</h2>
+      <h3>Customer Number# ${customerInfo.customerNumber}</h3>
+      <p>${customerInfo.firstName} ${customerInfo.lastName}<br>
+      ${customerInfo.streetAddress}, ${customerInfo.city}, ${customerInfo.state} ${customerInfo.zipCode}</p>
+    `;
+  } else {
+    customerInfoDiv.innerHTML = '<p>No customer information available</p>';
+  }
+}
+
+
+
+        function displayRoofInfo(roofInfo) {
+  
+  const roofInfoDiv = document.getElementById('roofInfo');
+  roofInfoDiv.innerHTML = `
+    <h2>Roof Information</h2>
+    <p><strong>Material:</strong> ${roofInfo.material || 'Unknown'}<br>
+    <strong>Type:</strong> ${roofInfo.type || 'Unknown'}<br>
+    <strong>Color:</strong> ${roofInfo.color || 'Unknown'}<br>
+    <strong>Manufacturer:</strong> ${roofInfo.manufacturer || 'Unknown'}<br>
+    <strong>Model:</strong> ${roofInfo.model || 'Unknown'}<br>
+    <strong>Vent Type:</strong> ${roofInfo.ventType || 'Unknown'}<br>
+    <strong>Install Date:</strong> ${roofInfo.installDate || 'Unknown'}<br>
+    <strong>BCS Warranty Expiration:</strong> ${roofInfo.bcsWarrantyExpiration || 'Unknown'}</p>
+  `;
+}
+
+
+  function displayDeviceInfo(data) {
+  const deviceInfoDiv = document.getElementById('deviceInfo');
+  if (data && data.macAddresses && data.macAddresses.length > 0) {
+    let deviceHtml = '<h2>Device Information</h2>';
+    
+    // Group MAC addresses in pairs (two per row)
+    const macAddressPairs = [];
+    for (let i = 0; i < data.macAddresses.length; i += 2) {
+      macAddressPairs.push(data.macAddresses.slice(i, i + 2));
+    }
+
+    // Iterate over pairs of MAC addresses
+    macAddressPairs.forEach(pair => {
+      deviceHtml += `<div class="device-row">`; // Row for two devices
+
+      pair.forEach(mac => {
+        const deviceData = data.deviceData[mac];
+        
+        // Get latest reading for temperature and humidity
+        const latestReadingIndex = 0; // Assuming sorted by timestamp descending
+        const latestReading = {
+          temperature: deviceData.temperatures[latestReadingIndex],
+          humidity: deviceData.humidities[latestReadingIndex],
+          timestamp: new Date(deviceData.timestamps[latestReadingIndex]).toLocaleString()
+        };
+
+        // Add HTML for this MAC address
+        deviceHtml += `
+          <div class="device-section">
+            <p><strong>Location:</strong> ${deviceData.deviceName}<br>
+            <strong>SKU:</strong> ${deviceData.deviceSku}<br>
+            <strong>MAC Address:</strong> ${mac}<br>
+            <strong>Temperature:</strong> ${latestReading.temperature}°F<br>
+            <strong>Humidity:</strong> ${latestReading.humidity}%<br>
+            <strong>Last Updated:</strong> ${latestReading.timestamp}</p>
+          </div>
+        `;
+      });
+
+      deviceHtml += `</div>`; // Close row
+    });
+
+    deviceInfoDiv.innerHTML = deviceHtml;
+  } else {
+    deviceInfoDiv.innerHTML = '<p>No device information available</p>';
+  }
+}
+function createCharts(deviceData) {
+    const chartContainer = document.getElementById('chartContainer');
+    chartContainer.innerHTML = ''; // Clear previous charts
+    
+    // Create divs for temperature and humidity charts
+    const tempDiv = document.createElement('div');
+    tempDiv.id = 'temperatureChart';
+    tempDiv.style.width = '100%';
+    tempDiv.style.height = '400px';
+    tempDiv.style.marginBottom = '20px';
+    
+    const humidityDiv = document.createElement('div');
+    humidityDiv.id = 'humidityChart';
+    humidityDiv.style.width = '100%';
+    humidityDiv.style.height = '400px';
+    
+    chartContainer.appendChild(tempDiv);
+    chartContainer.appendChild(humidityDiv);
+    
+    const now = new Date(); // Current date and time
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+    
+    // Define color arrays for up to 10 devices
+    const colors = [
+        '#FF9800', // Orange (1st Floor)
+        '#2196F3', // Blue (Upstairs)
+        '#4CAF50', // Green
+        '#E91E63', // Pink
+        '#9C27B0', // Purple
+        '#00BCD4', // Cyan
+        '#FFC107', // Amber
+        '#795548', // Brown
+        '#607D8B', // Blue Grey
+        '#F44336'  // Red
+    ];
+    
+    // Arrays to store all traces
+    const tempTraces = [];
+    const humidityTraces = [];
+    
+    // Process each device's data
+    Object.entries(deviceData).forEach(([macAddress, data], index) => {
+        // Use modulo to cycle through colors if more than 10 devices
+        const colorIndex = index % colors.length;
+        const lineColor = colors[colorIndex];
+        
+        // Filter data for the last 7 days and validate
+        const filteredData = data.timestamps
+            .map((timestamp, i) => {
+                // Parse timestamp to Date object
+                let timestampDate;
+                try {
+                    // Try to parse the timestamp (handles different formats)
+                    timestampDate = new Date(timestamp);
+                    if (isNaN(timestampDate.getTime())) {
+                        // If invalid date, try parsing as MM/DD/YYYY, hh:mm:ss AM/PM format
+                        const parts = timestamp.split(', ');
+                        if (parts.length === 2) {
+                            const dateParts = parts[0].split('/');
+                            if (dateParts.length === 3) {
+                                const month = parseInt(dateParts[0]) - 1;
+                                const day = parseInt(dateParts[1]);
+                                const year = parseInt(dateParts[2]);
+                                
+                                const timeParts = parts[1].match(/(\d+):(\d+):(\d+)\s+([AP]M)/);
+                                if (timeParts) {
+                                    let hour = parseInt(timeParts[1]);
+                                    const minute = parseInt(timeParts[2]);
+                                    const second = parseInt(timeParts[3]);
+                                    const ampm = timeParts[4];
+                                    
+                                    if (ampm === 'PM' && hour < 12) hour += 12;
+                                    if (ampm === 'AM' && hour === 12) hour = 0;
+                                    
+                                    timestampDate = new Date(year, month, day, hour, minute, second);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error parsing timestamp:', timestamp, e);
+                    return null;
+                }
+                
+                // Validate temperature and humidity values
+                const temp = parseFloat(data.temperatures[i]);
+                const humidity = parseFloat(data.humidities[i]);
+                
+                // Skip invalid values
+                if (isNaN(temp) || isNaN(humidity) || 
+                    temp < 0 || temp > 150 || 
+                    humidity < 0 || humidity > 100) {
+                    return null;
+                }
+                
+                return {
+                    timestamp: timestampDate,
+                    temperature: temp,
+                    humidity: humidity
+                };
+            })
+            .filter(entry => entry !== null && entry.timestamp >= sevenDaysAgo)
+            .sort((a, b) => a.timestamp - b.timestamp); // Sort by timestamp ascending
+        
+        if (filteredData.length === 0) return; // Skip if no valid data
+        
+        // Extract data for plotting
+        const timestamps = filteredData.map(entry => entry.timestamp);
+        const temperatures = filteredData.map(entry => entry.temperature);
+        const humidities = filteredData.map(entry => entry.humidity);
+        
+        // Create temperature trace for this device
+        const deviceName = data.deviceName || macAddress;
+        
+        tempTraces.push({
+            x: timestamps,
+            y: temperatures,
+            name: deviceName,
+            type: 'scatter',
+            mode: 'lines',
+            line: {
+               color: lineColor,
+               width: 3,
+               shape: 'spline',
+               smoothing: 1.3
+            },
+            fill: 'tozeroy',
+            fillcolor: `rgba(${hexToRgb(lineColor)}, 0.3)`,
+            hoverinfo: 'y+x+name'
+        });
+        
+        // Create humidity trace for this device
+        humidityTraces.push({
+            x: timestamps,
+            y: humidities,
+            name: deviceName,
+            type: 'scatter',
+            mode: 'lines',
+            line: {
+               color: lineColor,
+               width: 3,
+               shape: 'spline',
+               smoothing: 1.3
+            },
+            fill: 'tozeroy',
+            fillcolor: `rgba(${hexToRgb(lineColor)}, 0.3)`,
+            hoverinfo: 'y+x+name'
+        });
+    });
+    
+    // Calculate min/max values from your data
+    const allTemps = [];
+    const allHumidities = [];
+
+    Object.values(deviceData).forEach(data => {
+        // Filter for last 7 days
+        const filteredData = data.timestamps
+            .map((timestamp, i) => {
+                // Parse timestamp to Date object
+                let timestampDate;
+                try {
+                    // Try to parse the timestamp (handles different formats)
+                    timestampDate = new Date(timestamp);
+                    if (isNaN(timestampDate.getTime())) {
+                        // If invalid date, try parsing as MM/DD/YYYY, hh:mm:ss AM/PM format
+                        const parts = timestamp.split(', ');
+                        if (parts.length === 2) {
+                            const dateParts = parts[0].split('/');
+                            if (dateParts.length === 3) {
+                                const month = parseInt(dateParts[0]) - 1;
+                                const day = parseInt(dateParts[1]);
+                                const year = parseInt(dateParts[2]);
+                                
+                                const timeParts = parts[1].match(/(\d+):(\d+):(\d+)\s+([AP]M)/);
+                                if (timeParts) {
+                                    let hour = parseInt(timeParts[1]);
+                                    const minute = parseInt(timeParts[2]);
+                                    const second = parseInt(timeParts[3]);
+                                    const ampm = timeParts[4];
+                                    
+                                    if (ampm === 'PM' && hour < 12) hour += 12;
+                                    if (ampm === 'AM' && hour === 12) hour = 0;
+                                    
+                                    timestampDate = new Date(year, month, day, hour, minute, second);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error parsing timestamp:', timestamp, e);
+                    return null;
+                }
+                
+                return {
+                    timestamp: timestampDate,
+                    temperature: parseFloat(data.temperatures[i]),
+                    humidity: parseFloat(data.humidities[i])
+                };
+            })
+            .filter(entry => entry !== null && entry.timestamp >= sevenDaysAgo);
+        
+        // Add temperatures and humidities to arrays
+        filteredData.forEach(entry => {
+            allTemps.push(entry.temperature);
+            allHumidities.push(entry.humidity);
+        });
+    });
+
+    // Calculate dynamic ranges (10 less than min, or fixed minimum)
+    const minTemp = Math.max(0, Math.min(...allTemps) - 10);
+    const maxTemp = Math.max(...allTemps) + 10;
+    const minHumidity = Math.max(0, Math.min(...allHumidities) - 10);
+    const maxHumidity = Math.min(100, Math.max(...allHumidities) + 10);
+
+
+    // Create temperature chart with all traces
+    const tempLayout = {
+        title: '<b>Temperature Readings (Last 7 Days)</b>',
+        dragmode: 'zoom',
+        uirevision: 'true',
+        xaxis: {
+            title: '',
+            type: 'date',
+            tickformat: '%m/%d/%y',
+            showgrid: true,
+            gridcolor: 'rgba(200,200,200,0.2)',
+            fixedrange: false
+        },
+        yaxis: {
+            title: '<b>Temperature (°F)</b>',
+            range: [minTemp, maxTemp],
+            showgrid: true,
+            gridcolor: 'rgba(200,200,200,0.2)',
+            fixedrange: false
+        },
+        margin: {
+            l: 50,
+            r: 50,
+            b: 50,
+            t: 50,
+            pad: 4
+        },
+        showlegend: true,
+        legend: {
+            x: 1,
+            xanchor: 'right',
+            y: 1
+        },
+        hovermode: 'closest',
+        plot_bgcolor: 'rgba(255,255,255,1)',
+        paper_bgcolor: 'rgba(255,255,255,1)'
+    };
+    
+    // Create humidity chart with all traces
+    const humidityLayout = {
+        title: '<b>Humidity Readings (Last 7 Days)</b>',
+        dragmode: 'zoom',
+        uirevision: 'true',
+        xaxis: {
+            title: '',
+            type: 'date',
+            tickformat: '%m/%d/%y',
+            showgrid: true,
+            gridcolor: 'rgba(200,200,200,0.2)',
+            fixedrange: false
+        },
+        yaxis: {
+            title: '<b>Humidity (%)</b>',
+            range: [minHumidity, maxHumidity],  // Fixed range for humidity percentage
+            showgrid: true,
+            gridcolor: 'rgba(200,200,200,0.2)',
+            fixedrange: false
+        },
+        margin: {
+            l: 50,
+            r: 50,
+            b: 50,
+            t: 50,
+            pad: 4
+        },
+        showlegend: true,
+        legend: {
+            x: 1,
+            xanchor: 'right',
+            y: 1
+        },
+        hovermode: 'closest',
+        plot_bgcolor: 'rgba(255,255,255,1)',
+        paper_bgcolor: 'rgba(255,255,255,1)'
+    };
+    
+ 
+// Plot configuration - single definition for both charts
+const tempConfig = {
+    responsive: true,
+    displayModeBar: true,
+    modeBarButtonsToShow: ['zoom2d', 'zoomIn2d', 'zoomOut2d', 'resetScale2d'],
+    scrollZoom: true,
+    staticPlot: false
+};
+
+const humidityConfig = {
+    responsive: true,
+    displayModeBar: true,
+    modeBarButtonsToShow: ['zoom2d', 'zoomIn2d', 'zoomOut2d', 'resetScale2d'],
+    scrollZoom: true,
+    staticPlot: false
+};
+
+// Plot the data with separate configs
+Plotly.newPlot('temperatureChart', tempTraces, tempLayout, tempConfig);
+Plotly.newPlot('humidityChart', humidityTraces, humidityLayout, humidityConfig);
+
+// Define charts array before using it
+const charts = ['temperatureChart', 'humidityChart'];
+
+// Force complete rebuild of temperature chart
+setTimeout(function() {
+    // Destroy and recreate the temperature chart
+    const tempDiv = document.getElementById('temperatureChart');
+    const tempParent = tempDiv.parentNode;
+    
+    // Remove the old chart
+    tempDiv.remove();
+    
+    // Create a new div
+    const newTempDiv = document.createElement('div');
+    newTempDiv.id = 'temperatureChart';
+    newTempDiv.style.width = '100%';
+    newTempDiv.style.height = '400px';
+    tempParent.insertBefore(newTempDiv, tempParent.firstChild);
+    
+    // Create the chart with a simpler configuration
+    Plotly.newPlot('temperatureChart', tempTraces, {
+        title: '<b>Temperature Readings (Last 7 Days)</b>',
+        dragmode: 'zoom',
+        uirevision: 'true',
+        xaxis: {
+            title: '',
+            type: 'date',
+            tickformat: '%m/%d/%y',
+            showgrid: true,
+            gridcolor: 'rgba(200,200,200,0.2)',
+            fixedrange: false
+        },
+        yaxis: {
+            title: '<b>Temperature (°F)</b>',
+            range: [minTemp, maxTemp],
+            showgrid: true,
+            gridcolor: 'rgba(200,200,200,0.2)',
+            fixedrange: false
+        },
+        margin: { l: 50, r: 50, b: 50, t: 50, pad: 4 },
+        showlegend: true,
+        legend: { x: 1, xanchor: 'right', y: 1 },
+        hovermode: 'closest',
+        plot_bgcolor: 'rgba(255,255,255,1)',
+        paper_bgcolor: 'rgba(255,255,255,1)'
+    }, {
+        responsive: true,
+        displayModeBar: true,
+        modeBarButtonsToShow: ['zoomIn2d', 'zoomOut2d', 'resetScale2d'],
+        scrollZoom: true,
+        staticPlot: false
+    });
+    
+    // Remove temperature chart from custom controls list
+    charts.splice(charts.indexOf('temperatureChart'), 1);
+}, 500);
+
+// Force complete rebuild of temperature chart
+setTimeout(function() {
+    // Destroy and recreate the temperature chart
+    const tempDiv = document.getElementById('temperatureChart');
+    const tempParent = tempDiv.parentNode;
+    
+    // Remove the old chart
+    tempDiv.remove();
+    
+    // Create a new div
+    const newTempDiv = document.createElement('div');
+    newTempDiv.id = 'temperatureChart';
+    newTempDiv.style.width = '100%';
+    newTempDiv.style.height = '400px';
+    tempParent.insertBefore(newTempDiv, tempParent.firstChild);
+    
+    // Create the chart with a simpler configuration
+    Plotly.newPlot('temperatureChart', tempTraces, {
+        title: '<b>Temperature Readings (Last 7 Days)</b>',
+        dragmode: 'zoom',
+        uirevision: 'true',
+        xaxis: {
+            title: '',
+            type: 'date',
+            tickformat: '%m/%d/%y',
+            showgrid: true,
+            gridcolor: 'rgba(200,200,200,0.2)',
+            fixedrange: false
+        },
+        yaxis: {
+            title: '<b>Temperature (°F)</b>',
+            range: [30, 110],
+            showgrid: true,
+            gridcolor: 'rgba(200,200,200,0.2)',
+            fixedrange: false
+        },
+        margin: { l: 50, r: 50, b: 50, t: 50, pad: 4 },
+        showlegend: true,
+        legend: { x: 1, xanchor: 'right', y: 1 },
+        hovermode: 'closest',
+        plot_bgcolor: 'rgba(255,255,255,1)',
+        paper_bgcolor: 'rgba(255,255,255,1)'
+    }, {
+        responsive: true,
+        displayModeBar: true,
+        modeBarButtonsToShow: ['zoomIn2d', 'zoomOut2d', 'resetScale2d'],
+        scrollZoom: true,
+        staticPlot: false
+    });
+    
+    // Remove temperature chart from custom controls list
+    charts.splice(charts.indexOf('temperatureChart'), 1);
+    
+    // Add touch prevention for temperature chart after it's rebuilt
+const tempChart = document.getElementById('temperatureChart');
+
+// Only prevent touch gestures on the actual plot area
+const plotArea = tempChart.querySelector('.plotly');
+if (plotArea) {
+        plotArea.addEventListener('touchstart', function(e) {
+            if (e.target.tagName !== 'BUTTON' && !e.target.closest('.modebar-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, { passive: false });
+        
+        plotArea.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
+    }
+}, 600);
+
+    
+    // Add touch prevention for humidity chart
+setTimeout(function() {
+    const humidityChart = document.getElementById('humidityChart');
+    
+    // Only prevent touch gestures on the actual plot area
+    const plotArea = humidityChart.querySelector('.plotly');
+    if (plotArea) {
+        plotArea.addEventListener('touchstart', function(e) {
+            if (e.target.tagName !== 'BUTTON' && !e.target.closest('.modebar-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, { passive: false });
+        
+        plotArea.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
+    }
+}, 600);
+
+}
+
+// Helper function to convert hex color to RGB format
+function hexToRgb(hex) {
+    // Remove # if present
+    hex = hex.replace('#', '');
+    
+    // Parse the hex values
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    return `${r}, ${g}, ${b}`;
+}
+
+// Add event listeners for the buttons
+document.getElementById('clientPageButton').addEventListener('click', function() {
+    // Check if the connection is mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Navigate to the appropriate URL based on device type
+    if (isMobile) {
+        window.location.href = 'https://wtest.synology.me:20446/verify.html?mobile=true';
+    } else {
+        window.location.href = 'https://wtest.synology.me:20446';
+    }
+});
+
+document.getElementById('homeButton').addEventListener('click', function() {
+    // Navigate to the company website
+    window.location.href = 'https://mybestcontracting.com';
+});
+    </script>
+</body>
+</html>

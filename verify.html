@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Security Verification</title>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            display: flex; /* Center container */
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: auto;
+            padding: 40px;
+            box-sizing: border-box;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center; /* Center content inside container */
+        }
+        h2 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: bold; /* Make title bold */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+        /* 3D effect for the Security Verification header */
+        h2:nth-of-type(2) {
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 
+                0 1px 0 #ccc,
+                0 2px 0 #c9c9c9,
+                0 3px 0 #bbb,
+                0 4px 0 #b9b9b9,
+                0 5px 0 #aaa,
+                0 6px 1px rgba(0,0,0,.1),
+                0 0 5px rgba(0,0,0,.1),
+                0 1px 3px rgba(0,0,0,.3),
+                0 3px 5px rgba(0,0,0,.2),
+                0 5px 10px rgba(0,0,0,.25),
+                0 10px 10px rgba(0,0,0,.2),
+                0 20px 20px rgba(0,0,0,.15);
+        }
+        p {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        input {
+            width: 300px;
+            padding: 12px;
+            font-size: 18px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            margin-bottom: 30px;
+        }
+        button {
+            background-color: #333;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .button-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .button-container button {
+        min-width: 150px; /* Ensure buttons have consistent size */
+        margin: 5px;
+        flex: 0 0 calc(50% - 20px); /* Two buttons per row with spacing */
+        box-sizing: border-box;
+    }
+    
+        .green-button {
+            background-color: #28a745; /* Green for Customer Docs and Attic/Roof Data */
+        }
+        .green-button:hover {
+            background-color: #218838; /* Darker green on hover */
+        }
+        .black-button {
+            background-color: #333; /* Black for Home and Member Area */
+        }
+        .black-button:hover {
+            background-color: #555; /* Darker black on hover */
+        }
+        .contact-icons {
+            display: flex; /* Align icons horizontally */
+            justify-content: center; 
+            gap: 20px; /* Space between icons */
+            margin-top: 20px; 
+        }
+        .contact-icons img {
+            width: 50px; /* Set icon size */
+            height: auto; 
+        }
+        @media (min-width: 768px) {
+        .button-container button {
+            flex: 0 0 auto; /* Let buttons take natural width on larger screens */
+        }
+    }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="bestcontractingbase.jpg" alt="Best Contracting Services Logo" style="width:auto; height:auto;">
+        <h2>BCS Customer Center</h2>
+        <h2>Security Verification</h2>
+        <p>For security purposes, please enter your customer number:</p>
+        <input type="text" id="customerNumber" name="customerNumber"><br/>
+        <button onclick="verifyCustomer()">Submit</button>
+        <div id="error" class="error"></div>
+    </div>
+    <script>
+        // Check for mobile parameter in URL when page loads
+        const urlParams = new URLSearchParams(window.location.search);
+        const mobileView = urlParams.get('mobile');
+        let isMobileView = (mobileView === 'true');
+        
+        function verifyCustomer() {
+            const customerNumber = document.getElementById('customerNumber').value;
+
+            // Simulate an API call to validate customer number
+            const xhr = new XMLHttpRequest();
+            
+            xhr.open('POST', '/Sensors', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.success) {
+                        buildCustomerPage(data.customerurl, data.customerNumber);
+                    } else {
+                        document.getElementById('error').textContent = 'Invalid customer number. Please contact support.';
+                    }
+                } else {
+                    document.getElementById('error').textContent = 'Server error. Please try again later.';
+                }
+            };
+
+            xhr.onerror = function() {
+                document.getElementById('error').textContent = 'Connection error. Please try again.';
+                console.error("An error occurred during the request.");
+                return false;
+            };
+
+            document.getElementById('error').textContent = 'Verifying...';
+            xhr.send(`customerNumber=${encodeURIComponent(customerNumber)}`);
+        }
+
+        function buildCustomerPage(customerurl, customerNumber) {
+            // Replace only the container content
+            const container = document.querySelector('.container');
+            
+            // Create the base HTML
+            let buttonsHTML = `
+                <button class="green-button" onclick="window.open('${customerurl}', '_blank')"><strong>Customer Docs</strong></button>
+                <button class="green-button" onclick="window.location.href='attic_roof_data.html?customerNumber=${encodeURIComponent(customerNumber)}'"><strong>Attic/Roof Data</strong></button>
+            `;
+            
+            // Only add Home and Member Area buttons if not in mobile view
+            if (!isMobileView) {
+                buttonsHTML += `
+                    <button id="homeButton" class="black-button" onclick="window.location.href='https://mybestcontracting.com'"><strong>Home</strong></button>
+                    <button id="memberButton" class="black-button" onclick="window.location.href='https://mybestcontracting.com/member-area'"><strong>Member Area</strong></button>
+                `;
+            }
+            // Choose the appropriate banner based on mobile view
+    let bannerHTML = '';
+    if (isMobileView) {
+        bannerHTML = `<iframe referrerpolicy='unsafe-url' frameborder='no' scrolling='auto' style='width: 100%; max-width: 400px; height: 400px;' src='https://www.enhancify.com/banner?name=Contractor_Text_400x400&page=9925836&hideLink=0'></iframe>`;
+    } else {
+       bannerHTML = `<iframe referrerpolicy='unsafe-url' frameborder='no' scrolling='auto' style='width: 100%; max-width: 400px; height: 400px;' src='https://www.enhancify.com/banner?name=Contractor_Text_400x400&page=9925836&hideLink=0'></iframe>`;
+    }
+            container.innerHTML = `
+                <img src="bestcontractingbase.jpg" alt="Best Contracting Services Logo" style="width:auto; height:auto;">
+                <h2>BCS Customer Center</h2>
+                <div class="button-container" style="margin-top:20px;">
+                    ${buttonsHTML}
+                </div>
+                <div style="margin-top:20px;">
+        ${bannerHTML}
+    </div>
+    
+                <div style="margin-top:40px;">
+                    <h3>Contact Us</h3>
+                    <div class="contact-icons">
+                        <a href="tel:4695702488"><img src="phone.png" alt="Phone"></a>
+                        <a href="smsto:4695702488"><img src="text.png" alt="SMS"></a>
+                        <a href="mailto:support@mybestcontracting.com"><img src="email.png" alt="Email"></a>
+                    </div>
+                </div>`;
+        }
+                
+        document.getElementById('customerNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                verifyCustomer();
+            }
+        });
+    </script>
+</body>
+</html>
